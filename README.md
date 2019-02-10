@@ -110,6 +110,14 @@ If you found this library useful in your research, please consider citing
 ```
  
 # Requirements
+
+Install the required Tensorflow version along with the package using either
+
+```
+pip install .[tf]  # for cpu
+pip install .[tf-gpu]  # for gpu
+pip install .[tests]  # for cpu testing
+```
  
  - Tensorflow 1.12.0 or above. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
  - matplotlib

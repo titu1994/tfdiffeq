@@ -26,12 +26,14 @@ setup(
     description='Tensorflow implementation of Partial Differential Equation Solvers with full GPU support',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    install_requires=['tensorflow-gpu',
-                      'numpy>=1.15.2',
+    install_requires=['numpy>=1.15.2',
                       'scipy>=1.1.0',
-                      'matplotlib>=3.0.0; python_version > "3.0"'],
+                      'matplotlib>=3.0.0; python_version > "3.0"',
+                      'six>=1.11.0'],
     extras_require={
-        'tests': ['pytest', 'matplotlib', 'six>=1.11.0'],
+        'tests': ['tensorflow', 'six>=1.11.0'],
+        'tf': ['tensorflow>=1.12'],
+        'tf-gpu': ['tensorflow-gpu>=1.12.0'],
     },
     classifiers=(
         "Programming Language :: Python :: 3.5",
