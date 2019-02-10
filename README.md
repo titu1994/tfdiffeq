@@ -114,6 +114,7 @@ If you found this library useful in your research, please consider citing
  - Tensorflow 1.12.0 or above. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
  - matplotlib
  - numpy
+ - scipy (for tests)
  - six
  
  

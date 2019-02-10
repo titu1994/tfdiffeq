@@ -28,10 +28,10 @@ setup(
     long_description_content_type='text/markdown',
     install_requires=['tensorflow-gpu',
                       'numpy>=1.15.2',
-                      'six>=1.11.0',
+                      'scipy>=1.1.0',
                       'matplotlib>=3.0.0; python_version > "3.0"'],
     extras_require={
-        'tests': ['pytest', 'matplotlib'],
+        'tests': ['pytest', 'matplotlib', 'six>=1.11.0'],
     },
     classifiers=(
         "Programming Language :: Python :: 3.5",
