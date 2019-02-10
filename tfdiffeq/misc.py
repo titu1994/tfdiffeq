@@ -1,7 +1,7 @@
+import six
 import warnings
 from typing import Iterable
 
-import six
 import tensorflow as tf
 
 
@@ -9,7 +9,7 @@ def cast_double(x):
     if isinstance(x, Iterable):
         try:
             x = tf.cast(x, tf.float64)
-        except:
+        except Exception:
             xn = []
             for xi in x:
                 if xi.dtype != tf.float64:
@@ -30,6 +30,9 @@ def cast_double(x):
 
 
 def move_to_device(x, device):
+    if not isinstance(x, tf.Tensor):
+        return x
+
     if isinstance(device, tf.Tensor):
         device = device.device
 
@@ -49,7 +52,7 @@ def move_to_device(x, device):
 
 
 def func_cast_double(func):
-    """ Casts all Tensor and Variable arguments to float64 """
+    """ Casts all Tensor arguments to float64 """
 
     @six.wraps(func)
     def wrapper(*args, **kwargs):
@@ -67,6 +70,7 @@ def func_cast_double(func):
 
 
 def _check_len(x):
+    """ Utility function to get the length of the tensor """
     if hasattr(x, 'shape'):
         return x.shape[0]
     else:
@@ -74,31 +78,12 @@ def _check_len(x):
 
 
 def _numel(x):
+    """ Compute number of elements in the input tensor """
     return tf.cast(tf.reduce_prod(x.shape), x.dtype)
 
 
 def _is_floating_tensor(x):
     return x.dtype in [tf.float16, tf.float32, tf.float64]
-
-
-# def _checked_max(*args):
-#     dimlens = [len(arg.shape) for arg in args]
-#     max_len_dim = max(dimlens)
-#     min_len_dim = min(dimlens)
-#
-#     new_args = []
-#     if max_len_dim != min_len_dim:
-#         for i, arg in enumerate(args):
-#             if dimlens[i] != min_len_dim:
-#                 difference = dimlens[i] - min_len_dim
-#                 axes = list(range(difference))
-#                 arg = tf.reduce_max(arg, axis=axes)
-#
-#             new_args.append(arg)
-#     else:
-#         new_args = args
-#
-#     return tf.reduce_max(new_args)
 
 
 def _flatten(sequence):
