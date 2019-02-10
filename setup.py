@@ -30,12 +30,12 @@ setup(
     description='Tensorflow implementation of Partial Differential Equation Solvers with full GPU support',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    install_requires=['numpy>=1.15.2',
-                      'tensorflow-gpu>=1.12.0',
+    install_requires=['tensorflow>=1.12.0',
+                      'numpy>=1.15.2',
                       'six>=1.11.0',
                       'matplotlib>=3.0.0; python_version > "3.0"'],
     extras_require={
-        'tests': ['pytest', 'coverage', 'pytest-cov', 'codecov', 'matplotlib'],
+        'tests': ['pytest', 'matplotlib'],
     },
     classifiers=(
         "Programming Language :: Python :: 3.5",
