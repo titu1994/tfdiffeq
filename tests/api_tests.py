@@ -1,9 +1,10 @@
+import sys
 import unittest
-
 import tensorflow as tf
 
 import tfdiffeq
-from .problems import construct_problem
+sys.path.insert(0, '..')
+from tests.problems import construct_problem
 
 if not tf.executing_eagerly():
     tf.enable_eager_execution()

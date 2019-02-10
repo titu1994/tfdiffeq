@@ -5,11 +5,10 @@ matrix:
     - python: 3.6
 # command to install dependencies
 install:
-  - pip install tensorflow
   - pip install -e .[tests]
 # command to run tests
 script:
-  - py.test tests/
+  - python tests/run_all_tests.py
 notifications:
   email:
     on_success: never
