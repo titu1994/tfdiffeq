@@ -1,4 +1,5 @@
 # Tensorflow Ordinary Differential Equation Solvers
+[![Build Status](https://travis-ci.org/titu1994/tfdiffeq.svg?branch=master)](https://travis-ci.org/titu1994/tfdiffeq)
 
 A library built to replicate the [TorchDiffEq](https://github.com/rtqichen/torchdiffeq) library built for the [Neural Ordinary Differential Equations paper by Chen et al](https://arxiv.org/abs/1806.07366), running entirely on Tensorflow Eager Execution.
 
