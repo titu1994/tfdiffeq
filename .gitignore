@@ -91,6 +91,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.idea/
 
 # Spyder project settings
 .spyderproject
@@ -112,4 +113,6 @@ docs/sources/*
 examples/.data
 examples/*_copy
 examples/latent_torch
+examples/latent
 examples/*_torch.py
+examples/ode_demo_plots
