@@ -48,6 +48,27 @@ Backpropagation through odeint goes through the internals of the solver, but thi
 
 **NOTE: As of now, adjoint methods are not available in this port.**
 
+# Keyword Arguments
+
+- `rtol`: Relative tolerance.
+- `atol`: Absolute tolerance.
+- `method`: One of the solvers listed below.
+
+### List of ODE Solvers:
+
+### Adaptive-step:
+
+ - `dopri5`: Runge-Kutta 4(5) [default].
+ - `adams`: Adaptive-order implicit Adams.
+
+### Fixed-step:
+
+ - `euler`: Euler method.
+ - `midpoint`: Midpoint method.
+ - `rk4`: Fourth-order Runge-Kutta with 3/8 rule.
+ - `explicit_adams`: Explicit Adams.
+ - `fixed_adams`: Implicit Adams
+
 ## Compatibility
 
 Since tensorflow doesn't yet support global setting of default datatype, the `tfdiffeq` library provides a few convenience methods.
@@ -76,7 +97,19 @@ The scripts for the examples can be found in the `examples` folder, along with t
  
  - The ODENet on MNIST experiment has not been performed yet, as without Adjoint methods, it takes an enormous amount of memory and time.
  
- # Requirements
+# Reference
+If you found this library useful in your research, please consider citing
+
+```
+@article{chen2018neural,
+  title={Neural Ordinary Differential Equations},
+  author={Chen, Ricky T. Q. and Rubanova, Yulia and Bettencourt, Jesse and Duvenaud, David},
+  journal={Advances in Neural Information Processing Systems},
+  year={2018}
+}
+```
+ 
+# Requirements
  
  - Tensorflow 1.12.0 or above. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
  - matplotlib
