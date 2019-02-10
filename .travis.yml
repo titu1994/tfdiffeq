@@ -6,15 +6,10 @@ matrix:
 # command to install dependencies
 install:
   - pip install tensorflow
-  - pip install coverage
-  - pip install pytest-cov
-  - pip install codecov
   - pip install -e .[tests]
 # command to run tests
 script:
-  - py.test tests/ --cov=tfdiffeq tests/
-after_success:
-  - codecov
+  - py.test tests/
 notifications:
   email:
     on_success: never
