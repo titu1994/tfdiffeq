@@ -6,6 +6,11 @@ import numpy as np
 import tensorflow as tf
 
 
+"""
+PORTED FROM https://pytorch.org/docs/stable/_modules/torch/autograd/gradcheck.html
+"""
+
+
 def _numel(x):
     """ Compute number of elements in the input tensor """
     return tf.cast(tf.reduce_prod(x.shape), x.dtype)
