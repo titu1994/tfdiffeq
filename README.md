@@ -19,10 +19,7 @@ There are a few major limitations with this project :
 - Speed is slightly slower than the PyTorch codebase. This is because there are several places where I had to place explicit casts to `tf.float64`. Runge-Kutta solvers require that level of precision for correct gradient computations. Yet, Tensorflow does not provide a convenient global switch to force all created tensors to double dtype. So explicit casts were unavoidable. 
   - Make sure to wrap the entire script in a `with tf.device('/gpu:0')` to make full utilization of the GPU.
   - Convenience methods `move_to_device`, `cast_double` and the wrapper `func_cast_double` are made available from the library to make things easier on this front.
-  
-- No equivalent tests for gradients checks. Tensorflow has no equivalent to `torch.autograd.checkgrad`, and therefore I could not port the tests. However, given that the non-adjoint codebase is a ditto-replica, and that the example scripts can replicate the original codebase results perfectly, I think the gradient computations are working correctly.
-  - Tests will be updated when Tensorflow provides equivalent functionality. One could port the entire `torch.autograd.checkgrad` functionality from PyTorch, but it's too much work just to run tests.
-  
+
 # Basic Usage
 
 Note: This is taken directly from the original PyTorch codebase. Almost all concepts apply here as well.
