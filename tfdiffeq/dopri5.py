@@ -100,7 +100,7 @@ class Dopri5Solver(AdaptiveStepsizeODESolver):
         #                      Assertions                      #
         ########################################################
         dt = tf.cast(dt, t0.dtype)
-        assert t0 + dt > t0, 'underflow in dt {}'.format(dt.item())
+        assert t0 + dt > t0, 'underflow in dt {}'.format(dt.numpy())
         for y0_ in y0:
             assert _is_finite(tf.abs(y0_)), 'non-finite values in state `y`: {}'.format(y0_)
         y1, f1, y1_error, k = _runge_kutta_step(self.func, y0, f0, t0, dt, tableau=_DORMAND_PRINCE_SHAMPINE_TABLEAU)

@@ -39,6 +39,7 @@ class Lambda(tf.keras.Model):
 true_y = odeint(Lambda(), true_y0, t, method=args.method)
 print(true_y)
 
+
 def get_batch():
     s = np.random.choice(
         np.arange(args.data_size - args.batch_time,

@@ -31,27 +31,9 @@ class AdaptiveStepsizeODESolver(object):
         self.before_integrate(t)
         for i in range(1, t.shape[0]):
             y = self.advance(t[i])
-            # y = cast_double(y)
+            y = tf.cast(y, tf.float64)
             solution.append(y)
-
-        solutions = tuple(map(tf.stack, tuple(zip(*solution))))
-
-        # solution_stacks = []
-        # stacks = [solution[0]]
-        # check_shape = solution[0].shape
-        # for i in range(1, len(solutions)):
-        #     shape = solutions[i].shape
-        #     if shape == check_shape:
-        #         stacks.append(solution[i])
-        #     else:
-        #         if len(stacks) != 0:
-        #             solution_stacks.append(tf.stack(stacks))
-        #             stacks = []
-        #         else:
-        #             stacks.append(solutions[i])
-        #             check_shape = solutions[i].shape
-
-        return tuple(solutions)
+        return tuple(map(tf.stack, tuple(zip(*solution))))
 
 
 class FixedGridODESolver(object):

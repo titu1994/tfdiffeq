@@ -13,14 +13,15 @@ tf.enable_eager_execution()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--network', type=str, choices=['resnet', 'odenet'], default='odenet')
-parser.add_argument('--tol', type=float, default=1e-3)
+parser.add_argument('--tol', type=float, default=1e-4)
+parser.add_argument('--method', type=str, choices=['dopri5', 'adams', 'fixed_adams'], default='dopri5')
 # parser.add_argument('--adjoint', type=eval, default=False, choices=[True, False])
 parser.add_argument('--downsampling-method', type=str, default='conv', choices=['conv', 'res'])
 parser.add_argument('--nepochs', type=int, default=160)
 parser.add_argument('--data_aug', type=eval, default=True, choices=[True, False])
 parser.add_argument('--lr', type=float, default=0.1)
 parser.add_argument('--batch_size', type=int, default=128)
-parser.add_argument('--test_batch_size', type=int, default=100)
+parser.add_argument('--test_batch_size', type=int, default=1000)
 
 parser.add_argument('--save', type=str, default='./mnist')
 parser.add_argument('--debug', action='store_true')
@@ -303,9 +304,10 @@ class ODEBlock(tf.keras.Model):
         self.integration_time = tf.convert_to_tensor([0., 1.], dtype=tf.float32)
 
     def call(self, x):
-        # integration_time = tf.cast(self.integration_time, x.dtype)
-        out = odeint(self.odefunc, x, self.integration_time, rtol=args.tol, atol=args.tol)
-        return tf.cast(out[1], tf.float32)
+        # self.integration_time = tf.cast(self.integration_time, x.dtype)
+        out = odeint(self.odefunc, x, self.integration_time, rtol=args.tol, atol=args.tol,
+                     method=args.method)
+        return tf.cast(out[1], tf.float32)  # necessary cast
 
     @property
     def nfe(self):
@@ -352,6 +354,9 @@ def get_mnist_loaders(data_aug=False, batch_size=128, test_batch_size=100, perc=
 
     x_train = tf.expand_dims(x_train, -1)
     x_test = tf.expand_dims(x_test, -1)
+
+    x_train = tf.cast(x_train, tf.float32) / 255.
+    x_test = tf.cast(x_test, tf.float32) / 255.
 
     y_train = tf.one_hot(y_train, 10)
     y_test = tf.one_hot(y_test, 10)
@@ -420,18 +425,14 @@ def one_hot(x, K):
 
 def accuracy(model, dataset_loader):
     total_correct = 0
+    print("Evaluating dataset ...")
+    samples = 0
     for x, y in dataset_loader:
-        # x = x.to(device)
-        # y = one_hot(np.array(y.numpy()), 10)
-
         target_class = np.argmax(y, axis=1)
         predicted_class = np.argmax(model(x).numpy(), axis=1)
         total_correct += np.sum(predicted_class == target_class)
-    return total_correct / len(dataset_loader.dataset)
-
-
-# def count_parameters(model):
-#     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+        samples += x.shape.as_list()[0]
+    return total_correct / samples
 
 
 def makedirs(dirname):
@@ -476,24 +477,24 @@ with tf.device(device):
 
     if args.downsampling_method == 'conv':
         downsampling_layers = [
-            tf.keras.layers.Conv2D(64, (3, 3), strides=(1, 1), padding='same'),
-            norm(64),
+            tf.keras.layers.Conv2D(32, (3, 3), strides=(1, 1), padding='same'),
+            norm(32),
             tf.keras.layers.ReLU(),
-            tf.keras.layers.Conv2D(64, (4, 4), strides=(2, 2), padding='same'),
-            norm(64),
+            tf.keras.layers.Conv2D(32, (4, 4), strides=(2, 2), padding='same'),
+            norm(32),
             tf.keras.layers.ReLU(),
-            tf.keras.layers.Conv2D(64, (4, 4), strides=(2, 2), padding='same'),
+            tf.keras.layers.Conv2D(32, (4, 4), strides=(2, 2), padding='same'),
         ]
     elif args.downsampling_method == 'res':
         downsampling_layers = [
-            tf.keras.layers.Conv2D(64, (3, 3), strides=(1, 1), padding='same'),
-            ResBlock(64, 64, stride=2, downsample=conv1x1(64, 64, 2)),
-            ResBlock(64, 64, stride=2, downsample=conv1x1(64, 64, 2)),
+            tf.keras.layers.Conv2D(32, (3, 3), strides=(1, 1), padding='same'),
+            ResBlock(32, 32, stride=2, downsample=conv1x1(32, 32, 2)),
+            ResBlock(32, 32, stride=2, downsample=conv1x1(32, 32, 2)),
         ]
 
-    feature_layers = [ODEBlock(ODEfunc(64))] if is_odenet else [ResBlock(64, 64) for _ in range(1)]
+    feature_layers = [ODEBlock(ODEfunc(32))] if is_odenet else [ResBlock(32, 32) for _ in range(1)]
 
-    fc_layers = [norm(64),
+    fc_layers = [norm(32),
                  tf.keras.layers.ReLU(),
                  tf.keras.layers.AveragePooling2D((1, 1)),
                  Flatten(),
@@ -515,7 +516,7 @@ with tf.device(device):
     num_steps_per_epoch = 60000 // args.batch_size
     boundary_epochs = [60, 100, 140]
     boundary_iterations = [num_steps_per_epoch * e for e in boundary_epochs]
-    lrs = [1, 0.1, 0.01, 0.001]
+    lrs = [0.1, 0.05, 0.01, 0.001]
 
     learning_rate = tf.train.piecewise_constant(global_step, boundary_iterations, lrs)
     optimizer = tf.train.MomentumOptimizer(learning_rate, momentum=0.9, use_nesterov=True)
@@ -537,8 +538,6 @@ with tf.device(device):
             x, y = next(train_loader)
             logits = model(x)
             loss = tf.keras.losses.categorical_crossentropy(logits, y)
-
-        print('model variables', len(model.variables))
 
         if is_odenet:
             nfe_forward = feature_layers[0].nfe
