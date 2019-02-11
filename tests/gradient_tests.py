@@ -1,9 +1,8 @@
 import unittest
 
 import tensorflow as tf
-import torch
-
 import tfdiffeq
+
 from tests import problems
 from tests.check_grad import gradcheck
 
