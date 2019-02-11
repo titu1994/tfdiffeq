@@ -67,6 +67,8 @@ def func_cast_double(func):
         for arg in args:
             if isinstance(arg, tf.Tensor) or isinstance(arg, tf.Variable):
                 arg = cast_double(arg)
+            elif type(arg) == tuple or type(tuple) == list:
+                arg = cast_double(arg)
 
             cast_args.append(arg)
 

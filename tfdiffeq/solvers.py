@@ -2,7 +2,8 @@ import abc
 
 import tensorflow as tf
 
-from tfdiffeq.misc import _assert_increasing, _handle_unused_kwargs, move_to_device, cast_double
+from tfdiffeq.misc import (_assert_increasing, _handle_unused_kwargs,
+                           move_to_device, cast_double, func_cast_double)
 
 
 class AdaptiveStepsizeODESolver(object):
@@ -89,7 +90,7 @@ class FixedGridODESolver(object):
         solution = [cast_double(self.y0)]
 
         j = 1
-        y0 = self.y0
+        y0 = cast_double(self.y0)
         for t0, t1 in zip(time_grid[:-1], time_grid[1:]):
             dy = self.step_func(self.func, t0, t1 - t0, y0)
             y1 = tuple(y0_ + dy_ for y0_, dy_ in zip(y0, dy))
@@ -102,6 +103,7 @@ class FixedGridODESolver(object):
 
         return tuple(map(tf.stack, tuple(zip(*solution))))
 
+    @func_cast_double
     def _linear_interp(self, t0, t1, y0, y1, t):
         if t == t0:
             return y0
@@ -110,6 +112,5 @@ class FixedGridODESolver(object):
         t0 = move_to_device(t0, y0[0].device)
         t1 = move_to_device(t1, y0[0].device)
         t = move_to_device(t, y0[0].device)
-        # t0, t1, t = t0.to(y0[0]), t1.to(y0[0]), t.to(y0[0])
         slope = tuple((y1_ - y0_) / (t1 - t0) for y0_, y1_, in zip(y0, y1))
         return tuple(y0_ + slope_ * (t - t0) for y0_, slope_ in zip(y0, slope))

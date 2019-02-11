@@ -2,7 +2,7 @@ import collections
 import sys
 
 from tfdiffeq import rk_common
-from tfdiffeq.misc import _scaled_dot_product, _has_converged
+from tfdiffeq.misc import _scaled_dot_product, _has_converged, func_cast_double
 from tfdiffeq.solvers import FixedGridODESolver
 
 _BASHFORTH_COEFFICIENTS = [
@@ -169,6 +169,7 @@ class AdamsBashforthMoulton(FixedGridODESolver):
             self.prev_f.appendleft(f)
             self.prev_t = t
 
+    @func_cast_double
     def step_func(self, func, t, dt, y):
         self._update_history(t, func(t, y))
         order = min(len(self.prev_f), self.max_order - 1)

@@ -3,7 +3,7 @@ import collections
 
 import tensorflow as tf
 
-from tfdiffeq.misc import _scaled_dot_product, _convert_to_tensor, cast_double
+from tfdiffeq.misc import _scaled_dot_product, _convert_to_tensor, cast_double, func_cast_double
 
 _ButcherTableau = collections.namedtuple('_ButcherTableau', 'alpha beta c_sol c_error')
 
@@ -67,17 +67,25 @@ def _runge_kutta_step(func, y0, f0, t0, dt, tableau):
     return (y1, f1, y1_error, k)
 
 
+@func_cast_double
 def rk4_step_func(func, t, dt, y, k1=None):
-    if k1 is None: k1 = func(t, y)
+    if k1 is None:
+        k1 = func(t, y)
+    k1 = cast_double(k1)
+
     k2 = func(t + dt / 2, tuple(y_ + dt * k1_ / 2 for y_, k1_ in zip(y, k1)))
     k3 = func(t + dt / 2, tuple(y_ + dt * k2_ / 2 for y_, k2_ in zip(y, k2)))
     k4 = func(t + dt, tuple(y_ + dt * k3_ for y_, k3_ in zip(y, k3)))
     return tuple((k1_ + 2 * k2_ + 2 * k3_ + k4_) * (dt / 6) for k1_, k2_, k3_, k4_ in zip(k1, k2, k3, k4))
 
 
+@func_cast_double
 def rk4_alt_step_func(func, t, dt, y, k1=None):
     """Smaller error with slightly more compute."""
-    if k1 is None: k1 = func(t, y)
+    if k1 is None:
+        k1 = func(t, y)
+    k1 = cast_double(k1)
+
     k2 = func(t + dt / 3, tuple(y_ + dt * k1_ / 3 for y_, k1_ in zip(y, k1)))
     k3 = func(t + dt * 2 / 3, tuple(y_ + dt * (k1_ / -3 + k2_) for y_, k1_, k2_ in zip(y, k1, k2)))
     k4 = func(t + dt, tuple(y_ + dt * (k1_ - k2_ + k3_) for y_, k1_, k2_, k3_ in zip(y, k1, k2, k3)))
