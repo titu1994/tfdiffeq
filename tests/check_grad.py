@@ -1,11 +1,9 @@
-import sys
 import warnings
-import numpy as np
-from typing import Iterable
 from itertools import product
+from typing import Iterable
 
+import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework.ops import get_gradient_function
 
 
 def _numel(x):
@@ -70,7 +68,6 @@ def get_numerical_jacobian(fn, input, target=None, eps=1e-3):
     x_tensors = [t for t in iter_tensors(target, True)]
     j_tensors = [t for t in iter_tensors(jacobian)]
 
-
     for x_tensor, d_tensor in zip(x_tensors, j_tensors):
         # need data here to get around the version check because without .data,
         # the following code updates version but doesn't change content
@@ -119,9 +116,6 @@ def get_analytical_jacobian(input, output):
                     correct_grad_sizes = False
                 elif _numel(jacobian_x) != 0:
                     if d_x is None:
-                        # temp = np.ones_like(jacobian_x.numpy())
-                        # temp[:, i] = 0.
-                        # jacobian_x[:, i] *= temp
                         zeros = np.zeros(jacobian_x[:, i].shape.as_list())
                         tf.assign(jacobian_x[:, i], zeros)
                     else:
