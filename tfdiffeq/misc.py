@@ -213,7 +213,6 @@ def _select_initial_step(fun, t0, y0, order, rtol, atol, f0=None):
 
     if f0 is None:
         f0 = fun(t0, y0)
-        print("f0", f0.shape)
 
     f0 = cast_double(f0)
 
