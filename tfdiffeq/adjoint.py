@@ -1,6 +1,7 @@
 from typing import Iterable
 
 import tensorflow as tf
+from tensorflow.python.eager.context import eager_mode
 
 from tfdiffeq import odeint
 from tfdiffeq.misc import (_flatten, _flatten_convert_none_to_zeros,
@@ -183,33 +184,34 @@ def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None
     if not isinstance(func, tf.keras.Model):
         raise ValueError('func is required to be an instance of nn.Module.')
 
-    tensor_input = False
-    if tf.is_numeric_tensor(y0):
-        class TupleFunc(tf.keras.Model):
+    with eager_mode():
+        tensor_input = False
+        if tf.is_numeric_tensor(y0):
+            class TupleFunc(tf.keras.Model):
 
-            def __init__(self, base_func, **kwargs):
-                super(TupleFunc, self).__init__(**kwargs)
-                self.base_func = base_func
+                def __init__(self, base_func, **kwargs):
+                    super(TupleFunc, self).__init__(**kwargs)
+                    self.base_func = base_func
 
-            def call(self, t, y):
-                return (self.base_func(t, y[0]),)
+                def call(self, t, y):
+                    return (self.base_func(t, y[0]),)
 
-        tensor_input = True
-        y0 = (y0,)
-        func = TupleFunc(func)
+            tensor_input = True
+            y0 = (y0,)
+            func = TupleFunc(func)
 
-    # build the function to get its variables
-    if not func.built:
-        _ = func(t, y0)
+        # build the function to get its variables
+        if not func.built:
+            _ = func(t, y0)
 
-    flat_params = _flatten(func.variables)
+        flat_params = _flatten(func.variables)
 
-    global _arguments
-    _arguments = _Arguments(func, method, options)
+        global _arguments
+        _arguments = _Arguments(func, method, options)
 
-    ys = OdeintAdjointMethod(*y0, t, flat_params, rtol, atol)
+        ys = OdeintAdjointMethod(*y0, t, flat_params, rtol, atol)
 
-    if tensor_input or type(ys) == tuple or type(ys) == list:
-        ys = ys[0]
+        if tensor_input or type(ys) == tuple or type(ys) == list:
+            ys = ys[0]
 
-    return ys
+        return ys

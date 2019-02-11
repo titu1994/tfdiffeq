@@ -3,6 +3,7 @@ import warnings
 from typing import Iterable
 
 import tensorflow as tf
+from tensorflow.python import ops
 
 
 def cast_double(x):
@@ -30,11 +31,17 @@ def cast_double(x):
 
 
 def move_to_device(x, device):
+    if device is None:
+        return x
+
     if not isinstance(x, tf.Tensor):
         return x
 
     if isinstance(device, tf.Tensor):
         device = device.device
+
+    if len(device) == 0:
+        return x
 
     if '/' in device:
         device = device.replace('/', '')
@@ -138,7 +145,8 @@ def _is_finite(tensor):
 
 
 def _decreasing(t):
-    return tf.reduce_all(t[1:] < t[:-1])
+    v = tf.reduce_all(t[1:] < t[:-1])
+    return v
 
 
 def _assert_increasing(t):
@@ -205,6 +213,7 @@ def _select_initial_step(fun, t0, y0, order, rtol, atol, f0=None):
 
     if f0 is None:
         f0 = fun(t0, y0)
+        print("f0", f0.shape)
 
     f0 = cast_double(f0)
 
@@ -288,12 +297,35 @@ def _check_inputs(func, y0, t):
     tensor_input = False
     if isinstance(y0, tf.Tensor):
         tensor_input = True
+
+        if not isinstance(y0, ops.EagerTensor):
+            warnings.warn('Input is *not* an EagerTensor ! '
+                          'Dummy op with zeros will be performed instead.')
+
+            y0 = tf.convert_to_tensor(tf.zeros(y0.shape))
+
         y0 = (y0,)
         _base_nontuple_func_ = func
         func = lambda t, y: (_base_nontuple_func_(t, y[0]),)
-    assert isinstance(y0, tuple), 'y0 must be either a tf.Tensor or a tuple'
-    for y0_ in y0:
-        assert isinstance(y0_, tf.Tensor), 'each element must be a tf.Tensor but received {}'.format(type(y0_))
+
+    if ((type(y0) == tuple) or (type(y0) == list)):
+        if not tensor_input:
+            y0_type = type(y0)
+            y0 = list(y0)
+
+            for i in range(len(y0)):
+                assert isinstance(y0[i], tf.Tensor), 'each element must be a tf.Tensor ' \
+                                                     'but received {}'.format(type(y0[i]))
+
+                if not isinstance(y0[i], ops.EagerTensor):
+                    warnings.warn('Input %d (zero-based) is *not* an EagerTensor ! '
+                                  'Dummy op with zeros will be performed instead.' % (i))
+
+                    y0[i] = tf.convert_to_tensor(tf.zeros(y0[i].shape))
+
+            y0 = y0_type(y0)  # return to same type
+    else:
+        raise ValueError('y0 must be either a tf.Tensor or a tuple')
 
     if _decreasing(t):
         t = -t

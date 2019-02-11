@@ -1,3 +1,5 @@
+from tensorflow.python.eager.context import eager_mode
+
 from tfdiffeq.adams import VariableCoefficientAdamsBashforth
 from tfdiffeq.dopri5 import Dopri5Solver
 from tfdiffeq.fixed_adams import AdamsBashforth, AdamsBashforthMoulton
@@ -57,20 +59,20 @@ def odeint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None):
         TypeError: if `options` is supplied without `method`, or if `t` or `y0` has
             an invalid dtype.
     """
+    with eager_mode():
+        tensor_input, func, y0, t = _check_inputs(func, y0, t)
 
-    tensor_input, func, y0, t = _check_inputs(func, y0, t)
+        if options is None:
+            options = {}
+        elif method is None:
+            raise ValueError('cannot supply `options` without specifying `method`')
 
-    if options is None:
-        options = {}
-    elif method is None:
-        raise ValueError('cannot supply `options` without specifying `method`')
+        if method is None:
+            method = 'dopri5'
 
-    if method is None:
-        method = 'dopri5'
+        solver = SOLVERS[method](func, y0, rtol=rtol, atol=atol, **options)
+        solution = solver.integrate(t)
 
-    solver = SOLVERS[method](func, y0, rtol=rtol, atol=atol, **options)
-    solution = solver.integrate(t)
-
-    if tensor_input:
-        solution = solution[0]
-    return solution
+        if tensor_input:
+            solution = solution[0]
+        return solution
