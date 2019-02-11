@@ -1,8 +1,5 @@
 # Based on https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/integrate
 import collections
-
-import tensorflow as tf
-
 from tfdiffeq.misc import _scaled_dot_product, _convert_to_tensor, cast_double, func_cast_double
 
 _ButcherTableau = collections.namedtuple('_ButcherTableau', 'alpha beta c_sol c_error')
@@ -54,7 +51,7 @@ def _runge_kutta_step(func, y0, f0, t0, dt, tableau):
     k = tuple(map(lambda x: [x], f0))
     for alpha_i, beta_i in zip(tableau.alpha, tableau.beta):
         ti = t0 + alpha_i * dt
-        yi = tuple(y0_ + _scaled_dot_product(dt, tf.cast(beta_i, tf.float64), k_) for y0_, k_ in zip(y0, k))
+        yi = tuple(y0_ + _scaled_dot_product(dt, cast_double(beta_i), k_) for y0_, k_ in zip(y0, k))
         tuple(k_.append(cast_double(f_)) for k_, f_ in zip(k, func(ti, yi)))
 
     if not (tableau.c_sol[-1] == 0 and tableau.c_sol[:-1] == tableau.beta[-1]):

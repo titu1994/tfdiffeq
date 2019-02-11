@@ -20,7 +20,7 @@ parser.add_argument('--downsampling-method', type=str, default='conv', choices=[
 parser.add_argument('--nepochs', type=int, default=160)
 parser.add_argument('--data_aug', type=eval, default=True, choices=[True, False])
 parser.add_argument('--lr', type=float, default=0.1)
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--test_batch_size', type=int, default=1000)
 
 parser.add_argument('--save', type=str, default='./mnist')
@@ -473,6 +473,7 @@ logger.info(args)
 
 device = 'gpu:' + str(args.gpu) if tf.test.is_gpu_available() else 'cpu:0'
 with tf.device(device):
+# with open(os.devnull, 'w'):
     is_odenet = args.network == 'odenet'
 
     if args.downsampling_method == 'conv':
