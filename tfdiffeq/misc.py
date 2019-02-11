@@ -13,10 +13,8 @@ def cast_double(x):
         except Exception:
             xn = []
             for xi in x:
-                if xi.dtype != tf.float64:
-                    xn.append(tf.cast(xi, tf.float64))
-                else:
-                    xn.append(xi)
+                xi = cast_double(xi)
+                xn.append(xi)
 
             x = type(x)(xn)
 

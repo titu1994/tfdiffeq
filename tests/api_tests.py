@@ -5,6 +5,7 @@ import tensorflow as tf
 import tfdiffeq
 sys.path.insert(0, '..')
 from tests.problems import construct_problem
+from tests.check_grad import gradcheck
 
 if not tf.executing_eagerly():
     tf.enable_eager_execution()
@@ -33,14 +34,14 @@ class TestCollectionState(unittest.TestCase):
         self.assertLess(max_error0, eps)
         self.assertLess(max_error1, eps)
 
-    # def test_dopri5_gradient(self):
-    #     f, y0, t_points, sol = construct_problem(TEST_DEVICE)
-    #
-    #     tuple_f = lambda t, y: (f(t, y[0]), f(t, y[1]))
-    #
-    #     for i in range(2):
-    #         func = lambda y0, t_points: tfdiffeq.odeint(tuple_f, (y0, y0), t_points, method='dopri5')[i]
-    #         self.assertTrue(tf.test.compute_gradient_error(func, (y0, t_points)))
+    def test_dopri5_gradient(self):
+        f, y0, t_points, sol = construct_problem(TEST_DEVICE)
+
+        tuple_f = lambda t, y: (f(t, y[0]), f(t, y[1]))
+
+        for i in range(2):
+            func = lambda y0, t_points: tfdiffeq.odeint(tuple_f, (y0, y0), t_points, method='dopri5')[i]
+            self.assertTrue(gradcheck(func, (y0, t_points)))
 
     def test_adams(self):
         f, y0, t_points, sol = construct_problem(TEST_DEVICE)
@@ -54,14 +55,14 @@ class TestCollectionState(unittest.TestCase):
         self.assertLess(max_error0, eps)
         self.assertLess(max_error1, eps)
 
-    # def test_adams_gradient(self):
-    #     f, y0, t_points, sol = construct_problem(TEST_DEVICE)
-    #
-    #     tuple_f = lambda t, y: (f(t, y[0]), f(t, y[1]))
-    #
-    #     for i in range(2):
-    #         func = lambda y0, t_points: tfdiffeq.odeint(tuple_f, (y0, y0), t_points, method='adams')[i]
-    #         self.assertTrue(tf.autograd.gradcheck(func, (y0, t_points)))
+    def test_adams_gradient(self):
+        f, y0, t_points, sol = construct_problem(TEST_DEVICE)
+
+        tuple_f = lambda t, y: (f(t, y[0]), f(t, y[1]))
+
+        for i in range(2):
+            func = lambda y0, t_points: tfdiffeq.odeint(tuple_f, (y0, y0), t_points, method='adams')[i]
+            self.assertTrue(gradcheck(func, (y0, t_points)))
 
 
 if __name__ == '__main__':
