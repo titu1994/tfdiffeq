@@ -285,51 +285,50 @@ if __name__ == '__main__':
                         samp_ts = states['samp_ts']
                         print('Loaded ckpt from {}'.format(path))
 
-        # for itr in range(1, args.niters + 1):
-        #     # backward in time to infer q(z_0)
-        #     with tf.GradientTape() as tape:
-        #         h = rec.initHidden()
-        #         for t in reversed(range(samp_trajs.shape[1])):
-        #             obs = samp_trajs[:, t, :]
-        #             out, h = rec(obs, h)
-        #         qz0_mean, qz0_logvar = out[:, :latent_dim], out[:, latent_dim:]
-        #         epsilon = tf.convert_to_tensor(np.random.randn(*qz0_mean.shape.as_list()), dtype=qz0_mean.dtype)
-        #         z0 = epsilon * tf.exp(.5 * qz0_logvar) + qz0_mean
-        #
-        #         # forward in time and solve ode for reconstructions
-        #         pred_z = tf.transpose(odeint(func, z0, samp_ts), [1, 0, 2])
-        #         pred_x = dec(pred_z)
-        #
-        #         # compute loss
-        #         noise_std_ = tf.zeros(pred_x.shape, dtype=tf.float64) + noise_std
-        #         noise_logvar = 2. * tf.log(noise_std_)
-        #         logpx = tf.reduce_sum(log_normal_pdf(
-        #             samp_trajs, pred_x, noise_logvar), axis=-1)
-        #         logpx = tf.reduce_sum(logpx, axis=-1)
-        #         pz0_mean = pz0_logvar = tf.zeros(z0.shape, dtype=tf.float64)
-        #         analytic_kl = tf.reduce_sum(normal_kl(qz0_mean, qz0_logvar,
-        #                                               pz0_mean, pz0_logvar), axis=-1)
-        #         loss = tf.reduce_mean(-logpx + analytic_kl, axis=0)
-        #
-        #     params = (list(func.variables) + list(dec.variables) + list(rec.variables))
-        #     grad = tape.gradient(loss, params)
-        #     grad_vars = zip(grad, params)
-        #
-        #     optimizer.apply_gradients(grad_vars)
-        #     loss_meter.update(loss.numpy())
-        #
-        #     print('Iter: {}, running avg elbo: {:.4f}'.format(itr, -loss_meter.avg))
-        #
-        #     if itr != 0 and (itr + 1) % 100 == 0:
-        #         if args.train_dir is not None:
-        #             ckpt_path = os.path.join(args.train_dir, 'ckpt')
-        #
-        #             saver.save(ckpt_path)
-        #             save_states(orig_ts, orig_trajs, samp_ts, samp_trajs)
-        #             print('Stored ckpt at {}'.format(ckpt_path))
-        #
-        # print('Training complete after {} iters.'.format(itr))
+        for itr in range(1, args.niters + 1):
+            # backward in time to infer q(z_0)
+            with tf.GradientTape() as tape:
+                h = rec.initHidden()
+                for t in reversed(range(samp_trajs.shape[1])):
+                    obs = samp_trajs[:, t, :]
+                    out, h = rec(obs, h)
+                qz0_mean, qz0_logvar = out[:, :latent_dim], out[:, latent_dim:]
+                epsilon = tf.convert_to_tensor(np.random.randn(*qz0_mean.shape.as_list()), dtype=qz0_mean.dtype)
+                z0 = epsilon * tf.exp(.5 * qz0_logvar) + qz0_mean
 
+                # forward in time and solve ode for reconstructions
+                pred_z = tf.transpose(odeint(func, z0, samp_ts), [1, 0, 2])
+                pred_x = dec(pred_z)
+
+                # compute loss
+                noise_std_ = tf.zeros(pred_x.shape, dtype=tf.float64) + noise_std
+                noise_logvar = 2. * tf.log(noise_std_)
+                logpx = tf.reduce_sum(log_normal_pdf(
+                    samp_trajs, pred_x, noise_logvar), axis=-1)
+                logpx = tf.reduce_sum(logpx, axis=-1)
+                pz0_mean = pz0_logvar = tf.zeros(z0.shape, dtype=tf.float64)
+                analytic_kl = tf.reduce_sum(normal_kl(qz0_mean, qz0_logvar,
+                                                      pz0_mean, pz0_logvar), axis=-1)
+                loss = tf.reduce_mean(-logpx + analytic_kl, axis=0)
+
+            params = (list(func.variables) + list(dec.variables) + list(rec.variables))
+            grad = tape.gradient(loss, params)
+            grad_vars = zip(grad, params)
+
+            optimizer.apply_gradients(grad_vars)
+            loss_meter.update(loss.numpy())
+
+            print('Iter: {}, running avg elbo: {:.4f}'.format(itr, -loss_meter.avg))
+
+            if itr != 0 and (itr + 1) % 100 == 0:
+                if args.train_dir is not None:
+                    ckpt_path = os.path.join(args.train_dir, 'ckpt')
+
+                    saver.save(ckpt_path)
+                    save_states(orig_ts, orig_trajs, samp_ts, samp_trajs)
+                    print('Stored ckpt at {}'.format(ckpt_path))
+
+        print('Training complete after {} iters.'.format(itr))
 
         if args.visualize:
             # sample from trajectorys' approx. posterior
