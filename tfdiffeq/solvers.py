@@ -32,7 +32,7 @@ class AdaptiveStepsizeODESolver(object):
         self.before_integrate(t)
         for i in range(1, t.shape[0]):
             y = self.advance(t[i])
-            y = tf.cast(y, tf.float64)
+            y = cast_double(y)
             solution.append(y)
         return tuple(map(tf.stack, tuple(zip(*solution))))
 

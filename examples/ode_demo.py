@@ -36,7 +36,8 @@ class Lambda(tf.keras.Model):
         return tf.matmul(y ** 3, true_A)
 
 
-true_y = odeint(Lambda(), true_y0, t, method=args.method)
+with tf.device(device):
+    true_y = odeint(Lambda(), true_y0, t, method=args.method)
 print(true_y)
 
 
@@ -159,8 +160,6 @@ if __name__ == '__main__':
     with tf.device(device):
         func = ODEFunc()
 
-        # lr = tf.train.exponential_decay(0.001, tf.train.get_or_create_global_step(),
-        #                                 decay_steps=args.niters, decay_rate=0.99)
         lr = 1e-3
         optimizer = tf.train.RMSPropOptimizer(lr)
 

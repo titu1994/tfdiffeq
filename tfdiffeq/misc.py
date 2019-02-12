@@ -28,34 +28,6 @@ def cast_double(x):
     return x
 
 
-def move_to_device(x, device):
-    if device is None:
-        return x
-
-    if not isinstance(x, tf.Tensor):
-        return x
-
-    if isinstance(device, tf.Tensor):
-        device = device.device
-
-    if len(device) == 0:
-        return x
-
-    if '/' in device:
-        device = device.replace('/', '')
-
-    splits = device.split(':')[-2:]
-    device, id = splits
-    id = int(id)
-
-    if 'cpu' in device.lower():
-        x = x.cpu()
-    else:
-        x = x.gpu(id)
-
-    return x
-
-
 def func_cast_double(func):
     """ Casts all Tensor arguments to float64 """
 
@@ -76,6 +48,41 @@ def func_cast_double(func):
     return wrapper
 
 
+def move_to_device(x, device):
+    """ Utility function to move a tensor to a device """
+
+    if device is None:
+        return x
+
+    # tf.Variables cannot be moved to a device
+    if not isinstance(x, tf.Tensor):
+        return x
+
+    if isinstance(device, tf.Tensor):
+        device = device.device
+
+    # check if device is empty string
+    if len(device) == 0:
+        return x
+
+    if '/' in device:
+        device = device.replace('/', '')
+
+    splits = device.split(':')[-2:]
+    device, id = splits
+    id = int(id)
+
+    x_device = x.device.lower()
+
+    if 'cpu' in device.lower() and 'cpu' not in x_device:
+        x = x.cpu()
+
+    elif 'gpu' in device.lower() and 'gpu' not in x_device:
+        x = x.gpu(id)
+
+    return x
+
+
 def _check_len(x):
     """ Utility function to get the length of the tensor """
     if hasattr(x, 'shape'):
@@ -84,9 +91,11 @@ def _check_len(x):
         return len(x)
 
 
-def _numel(x):
+def _numel(x, dtype=None):
     """ Compute number of elements in the input tensor """
-    return tf.cast(tf.reduce_prod(x.shape), x.dtype)
+    if dtype is None:
+        dtype = x.dtype
+    return tf.cast(tf.reduce_prod(x.shape), dtype)
 
 
 def _is_floating_tensor(x):
@@ -335,6 +344,6 @@ def _check_inputs(func, y0, t):
         if not tf.is_numeric_tensor(y0_):
             raise TypeError('`y0` must be a floating point Tensor but is a {}'.format(y0_.type()))
     if not tf.is_numeric_tensor(t):
-        raise TypeError('`t` must be a floating point Tensor but is a {}'.format(t.type()))
+        raise TypeError('`t` must be a floating point Tensor but is a {}'.format(t.dtype))
 
     return tensor_input, func, y0, t

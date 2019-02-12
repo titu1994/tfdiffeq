@@ -16,9 +16,10 @@ There are a few major limitations with this project :
 - Adjoint methods are not available. As Tensorflow Eager doesn't yet support custom gradient backpropogation on the level required by the Adjoint method, though the codebase is almost ported already, the `tf.custom_gradient` callback is not flexible enough to use for this purpose yet.
   - The code for adjoint methods has already been ported inside `adjoint.py`. However, it cannot be accessed as Tensorflow cannot handle custom gradients with variables created inside it (and greater number of gradients than original number of inputs).
 
-- Speed is slightly slower than the PyTorch codebase. This is because there are several places where I had to place explicit casts to `tf.float64`. Runge-Kutta solvers require that level of precision for correct gradient computations. Yet, Tensorflow does not provide a convenient global switch to force all created tensors to double dtype. So explicit casts were unavoidable. 
-  - Make sure to wrap the entire script in a `with tf.device('/gpu:0')` to make full utilization of the GPU.
+- Speed is almost the same as the PyTorch codebase (+- 2%), *if the solver is wrapped inside a `tf.device` block*. Runge-Kutta solvers require double dtype precision for correct gradient computations. Yet, Tensorflow does not provide a convenient global switch to force all created tensors to double dtype. So explicit casts are unavoidable.
+  - Make sure to wrap the entire script in a `with tf.device('/gpu:0')` to make full utilization of the GPU. Or select the main components - the model, the optimizer, the dataset and the `odeint` call inside tf.device blocks locally.
   - Convenience methods `move_to_device`, `cast_double` and the wrapper `func_cast_double` are made available from the library to make things easier on this front.
+  - If type errors are thrown, use `tfdiffeq.cast_double(...)` to correct them.
 
 # Basic Usage
 
