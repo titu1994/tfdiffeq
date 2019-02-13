@@ -82,11 +82,17 @@ Since tensorflow doesn't yet support global setting of default datatype, the `tf
 
 The scripts for the examples can be found in the `examples` folder, along with the weights and results for the `latent_ode.py` script as it takes some time to train. Two results have been replicated from the original codebase:
 
- - `ode_demo.py` : A basic example which contains a short implementation of learning a dynamics model to mimic a spiral ODE. Defaults automatically to allow visualization.
+ - `ode_demo.py` : A basic example which contains a short implementation of learning a dynamics model to mimic a spiral ODE.
  
  The training should look similar to this:
  
 ![ode spiral demo](https://github.com/titu1994/tfdiffeq/blob/master/examples/demo1.gif?raw=true)
+
+- `spiral_ode_demo.py` : A basic example similar to above which contains a short implementation of learning a dynamics model to mimic a circular ODE.
+
+ The training should look similar to this:
+
+ ![ode circular demo](https://github.com/titu1994/tfdiffeq/blob/master/examples/circular_ode.gif?raw=true)
 
  - `latent_ode.py` : Another basic example which uses variational inference to learn a path along a spiral. 
  
