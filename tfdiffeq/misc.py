@@ -290,12 +290,12 @@ def _optimal_step_size(last_step, mean_error_ratio, safety=0.9, ifactor=10.0, df
         dfactor = _convert_to_tensor(1, dtype=tf.float64, device=mean_error_ratio.device)
 
     error_ratio = tf.sqrt(mean_error_ratio)
-    error_ratio = move_to_device(error_ratio, last_step.device)
     error_ratio = cast_double(error_ratio)
+    error_ratio = move_to_device(error_ratio, last_step.device)
 
     exponent = tf.convert_to_tensor(1 / order)
-    exponent = move_to_device(exponent, last_step.device)
     exponent = cast_double(exponent)
+    exponent = move_to_device(exponent, last_step.device)
 
     factor = tf.reduce_max([1 / ifactor, tf.reduce_min([error_ratio ** exponent / safety, 1 / dfactor])])
     return last_step / factor

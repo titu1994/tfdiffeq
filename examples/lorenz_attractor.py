@@ -1,7 +1,6 @@
 import time
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 import tensorflow as tf
 
 from tfdiffeq import odeint
@@ -50,6 +49,9 @@ with tf.device(device):
 
 print("Finished integrating ! Result shape :", solution.shape)
 print("Time required (s): ", t2 - t1)
+
+from mpl_toolkits.mplot3d import Axes3D  # needed for plotting in 3d
+_ = Axes3D
 
 fig = plt.figure(figsize=(16, 16))
 ax = fig.gca(projection='3d')
