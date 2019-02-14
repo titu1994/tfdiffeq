@@ -1,0 +1,61 @@
+import time
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+import tensorflow as tf
+
+from tfdiffeq import odeint
+
+tf.enable_eager_execution()
+
+
+# Lorenz Attractor requires a large number of non-matrix computations
+# Therefore, it is better to run it on the CPU only.
+device = 'cpu:0'
+
+
+class Lorenz(tf.keras.Model):
+
+    def __init__(self, sigma=10., beta=8 / 3., rho=28., **kwargs):
+        super().__init__(**kwargs)
+
+        self.sigma = float(sigma)
+        self.beta = float(beta)
+        self.rho = float(rho)
+
+    def call(self, t, y):
+        """ y here is [x, y, z] """
+        y = tf.cast(y, tf.float64)
+
+        dx_dt = self.sigma * (y[1] - y[0])
+        dy_dt = y[0] * (self.rho - y[2]) - y[1]
+        dz_dt = y[0] * y[1] - self.beta * y[2]
+
+        dL_dt = tf.stack([dx_dt, dy_dt, dz_dt])
+        return dL_dt
+
+
+t = tf.range(0.0, 100.0, 0.01, dtype=tf.float64)
+initial_state = tf.convert_to_tensor([1., 1., 1.], dtype=tf.float64)
+
+sigma = 10.
+beta = 8. / 3.
+rho = 28.
+
+
+with tf.device(device):
+    t1 = time.time()
+    solution = odeint(Lorenz(sigma, beta, rho), initial_state, t).numpy()
+    t2 = time.time()
+
+print("Finished integrating ! Result shape :", solution.shape)
+print("Time required (s): ", t2 - t1)
+
+fig = plt.figure(figsize=(16, 16))
+ax = fig.gca(projection='3d')
+ax.set_title('Lorenz Attractor')
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+ax.plot(solution[:, 0], solution[:, 1], solution[:, 2])
+plt.show()
