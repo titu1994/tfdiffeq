@@ -2,11 +2,11 @@ import tensorflow as tf
 
 from tfdiffeq.misc import (
     _scaled_dot_product, _convert_to_tensor, _is_finite, _select_initial_step, _handle_unused_kwargs,
-    _numel)
+    _numel, cast_double)
 from tfdiffeq.rk_common import _RungeKuttaState, _ButcherTableau, _runge_kutta_step
 from tfdiffeq.solvers import AdaptiveStepsizeODESolver
 
-# Parameters from Tsitouras (2011).
+# Parameters from [Tsitouras (2011)](http://users.ntua.gr/tsitoura/RK54_new_v2.pdf)
 _TSITOURAS_TABLEAU = _ButcherTableau(
     alpha=[0.161, 0.327, 0.9, 0.9800255409045097, 1., 1.],
     beta=[
@@ -31,7 +31,7 @@ _TSITOURAS_TABLEAU = _ButcherTableau(
 
 
 def _interp_coeff_tsit5(t0, dt, eval_t):
-    t = float((eval_t - t0) / dt)
+    t = cast_double((eval_t - t0) / dt)
     b1 = -1.0530884977290216 * t * (t - 1.3299890189751412) * (t ** 2 - 1.4364028541716351 * t + 0.7139816917074209)
     b2 = 0.1017 * t ** 2 * (t ** 2 - 2.1966568338249754 * t + 1.2949852507374631)
     b3 = 2.490627285651252793 * t ** 2 * (t ** 2 - 2.38535645472061657 * t + 1.57803468208092486)
@@ -43,7 +43,7 @@ def _interp_coeff_tsit5(t0, dt, eval_t):
 
 
 def _interp_eval_tsit5(t0, t1, k, eval_t):
-    dt = t1 - t0
+    dt = cast_double(t1 - t0)
     y0 = tuple(k_[0] for k_ in k)
     interp_coeff = _interp_coeff_tsit5(t0, dt, eval_t)
     y_t = tuple(y0_ + _scaled_dot_product(dt, interp_coeff, k_) for y0_, k_ in zip(y0, k))
@@ -56,14 +56,14 @@ def _optimal_step_size(last_step, mean_error_ratio, safety=0.9, ifactor=10.0, df
         return last_step * ifactor
     if mean_error_ratio < 1:
         dfactor = _convert_to_tensor(1, dtype=tf.float64, device=mean_error_ratio.device)
-    error_ratio = tf.cast(tf.sqrt(mean_error_ratio), last_step.dtype)
+    error_ratio = tf.cast(mean_error_ratio, last_step.dtype)
     exponent = tf.convert_to_tensor(1 / order, dtype=last_step.dtype)
-    factor = tf.maximum(1 / ifactor, tf.minimum(error_ratio ** exponent / safety, 1 / dfactor))
+    factor = tf.maximum(1. / ifactor, tf.minimum((error_ratio ** exponent) / safety, 1 / dfactor))
     return last_step / factor
 
 
 def _abs_square(x):
-    return tf.multiply(x, x)
+    return x * x
 
 
 class Tsit5Solver(AdaptiveStepsizeODESolver):
@@ -85,16 +85,17 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
         self.ifactor = _convert_to_tensor(ifactor, dtype=tf.float64, device=y0[0].device)
         self.dfactor = _convert_to_tensor(dfactor, dtype=tf.float64, device=y0[0].device)
         self.max_num_steps = _convert_to_tensor(max_num_steps, dtype=tf.int32, device=y0[0].device)
+        self.order = 5
 
     def before_integrate(self, t):
         if self.first_step is None:
             first_step = _convert_to_tensor(_select_initial_step(self.func, t[0], self.y0, 4, self.rtol, self.atol),
-                                            t.device)
+                                            device=t.device)
         else:
             first_step = _convert_to_tensor(0.01, dtype=t.dtype, device=t.device)
         self.rk_state = _RungeKuttaState(
             self.y0,
-            self.func(t[0].type_as(self.y0[0]), self.y0), t[0], t[0], first_step,
+            cast_double(self.func(t[0], self.y0)), t[0], t[0], first_step,
             tuple(map(lambda x: [x] * 7, self.y0))
         )
 
@@ -113,7 +114,7 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
         ########################################################
         #                      Assertions                      #
         ########################################################
-        assert t0 + dt > t0, 'underflow in dt {}'.format(dt.item())
+        assert t0 + dt > t0, 'underflow in dt {}'.format(dt.numpy())
         for y0_ in y0:
             assert _is_finite(tf.abs(y0_)), 'non-finite values in state `y`: {}'.format(y0_)
         y1, f1, y1_error, k = _runge_kutta_step(self.func, y0, f0, t0, dt, tableau=_TSITOURAS_TABLEAU)
@@ -141,7 +142,8 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
         y_next = y1 if accept_step else y0
         f_next = f1 if accept_step else f0
         t_next = t0 + dt if accept_step else t0
-        dt_next = _optimal_step_size(dt, mean_error_ratio, self.safety, self.ifactor, self.dfactor)
+        dt_next = _optimal_step_size(dt, mean_error_ratio, self.safety, self.ifactor, self.dfactor, order=self.order)
         k_next = k if accept_step else self.rk_state.interp_coeff
         rk_state = _RungeKuttaState(y_next, f_next, t0, t_next, dt_next, k_next)
+
         return rk_state

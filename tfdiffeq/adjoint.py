@@ -145,7 +145,7 @@ def OdeintAdjointMethod(*args):
 
             # Run the augmented system backwards in time.
             if isinstance(adj_params, Iterable):
-                count = _check_len(adj_params)
+                count = _numel(adj_params)
 
                 if count == 0:
                     adj_params = move_to_device(tf.convert_to_tensor(0., dtype=adj_y[0].dtype), adj_y[0].device)

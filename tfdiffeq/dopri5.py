@@ -61,7 +61,7 @@ class Dopri5Solver(AdaptiveStepsizeODESolver):
 
     def __init__(
         self, func, y0, rtol, atol, first_step=None, safety=0.9, ifactor=10.0, dfactor=0.2, max_num_steps=2**31 - 1,
-        **unused_kwargs
+        tableau=None, **unused_kwargs
     ):
         _handle_unused_kwargs(self, unused_kwargs)
         del unused_kwargs
@@ -75,6 +75,8 @@ class Dopri5Solver(AdaptiveStepsizeODESolver):
         self.ifactor = _convert_to_tensor(ifactor, dtype=tf.float64, device=y0[0].device)
         self.dfactor = _convert_to_tensor(dfactor, dtype=tf.float64, device=y0[0].device)
         self.max_num_steps = _convert_to_tensor(max_num_steps, dtype=tf.int32, device=y0[0].device)
+        self.tableau = tableau if tableau is not None else _DORMAND_PRINCE_SHAMPINE_TABLEAU
+        self.order = 5
 
     def before_integrate(self, t):
         f0 = self.func(tf.cast(t[0], self.y0[0].dtype), self.y0)
@@ -103,7 +105,7 @@ class Dopri5Solver(AdaptiveStepsizeODESolver):
         assert t0 + dt > t0, 'underflow in dt {}'.format(dt.numpy())
         for y0_ in y0:
             assert _is_finite(tf.abs(y0_)), 'non-finite values in state `y`: {}'.format(y0_)
-        y1, f1, y1_error, k = _runge_kutta_step(self.func, y0, f0, t0, dt, tableau=_DORMAND_PRINCE_SHAMPINE_TABLEAU)
+        y1, f1, y1_error, k = _runge_kutta_step(self.func, y0, f0, t0, dt, tableau=self.tableau)
 
         ########################################################
         #                     Error Ratio                      #
@@ -119,7 +121,7 @@ class Dopri5Solver(AdaptiveStepsizeODESolver):
         t_next = t0 + dt if accept_step else t0
         interp_coeff = _interp_fit_dopri5(y0, y1, k, dt) if accept_step else interp_coeff
         dt_next = _optimal_step_size(
-            dt, mean_sq_error_ratio, safety=self.safety, ifactor=self.ifactor, dfactor=self.dfactor, order=5
+            dt, mean_sq_error_ratio, safety=self.safety, ifactor=self.ifactor, dfactor=self.dfactor, order=self.order
         )
         rk_state = _RungeKuttaState(y_next, f_next, t0, t_next, dt_next, interp_coeff)
         return rk_state
