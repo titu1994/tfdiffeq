@@ -28,6 +28,8 @@ Note: This is taken directly from the original PyTorch codebase. Almost all conc
 > **NOTE**: There exists a Jupyter Notebook in the examples folder, `ode_usage.ipynb` which has examples of several
 ODE solutions, explaining various methods and demonstrates visualization functions available in this library.
 
+> **NOTE**: The Notebook can also be visualized on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/ode_usage.ipynb)
+
 This library provides one main interface odeint which contains general-purpose algorithms for solving initial value problems (IVP), with gradients implemented for all main arguments. An initial value problem consists of an ODE and an initial value,
 
 ```
