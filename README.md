@@ -25,6 +25,9 @@ There are a few major limitations with this project :
 
 Note: This is taken directly from the original PyTorch codebase. Almost all concepts apply here as well.
 
+> **NOTE**: There exists a Jupyter Notebook in the examples folder, `ode_usage.ipynb` which has examples of several
+ODE solutions, explaining various methods and demonstrates visualization functions available in this library.
+
 This library provides one main interface odeint which contains general-purpose algorithms for solving initial value problems (IVP), with gradients implemented for all main arguments. An initial value problem consists of an ODE and an initial value,
 
 ```
@@ -106,7 +109,7 @@ optimized routines. This should take roughly 1 minute on a modern machine.
  Results should be similar to below after 1200 iterations:
  
  ![ode spiral latent](https://github.com/titu1994/tfdiffeq/blob/master/images/vis.png?raw=true)
- 
+
  - The ODENet on MNIST experiment has not been performed yet, as without Adjoint methods, it takes an enormous amount of memory and time.
  
 # Reference
