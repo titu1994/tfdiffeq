@@ -5,7 +5,7 @@ import tensorflow as tf
 plt.style.use('seaborn-paper')
 
 
-def plot_phase_plot(func, xlims=None, ylims=None, num_points=20, xlabel='X', ylabel='Y', ip_rank=None):
+def plot_phase_portrait(func, xlims=None, ylims=None, num_points=20, xlabel='X', ylabel='Y', ip_rank=None):
     """
     Plots the phase portrait of a system of ODEs containing two dimensions.
 
@@ -32,7 +32,11 @@ def plot_phase_plot(func, xlims=None, ylims=None, num_points=20, xlabel='X', yla
         ylabel: Label of the Y axis.
 
         ip_rank: Declares the rank of the passed callable. Defaults to rank
-            1 if not passed a value.
+            1 if not passed a value. All axis but one must have dimension
+            equal to 1. All permutations are allowed, since it will be
+            squeezed down to a vector of rank 1.
+            Rank 1: Vector output. Shape = [N]
+            Rank 2: Matrix output. Shape = [1, N] or [N, 1] etc.
 
     Returns:
         Nothing is returned. The plot is not shown via plt.show() either,
