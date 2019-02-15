@@ -78,12 +78,18 @@ def plot_phase_portrait(func, xlims=None, ylims=None, num_points=20, xlabel='X',
             yi = Y[i, j]
             inp = tf.stack([xi, yi])
 
+            # prepare input shape for the function
             if ip_rank != 1:
                 o = [1] * (ip_rank - 1) + [2]  # shape = [1, ..., 2]
                 inp = tf.reshape(inp, o)
 
-            out = func(t, inp).numpy()
+            out = func(t, inp)
 
+            # check whether function returns a Tensor or a ndarray
+            if hasattr(out, 'numpy'):
+                out = out.numpy()
+
+            # reshape the results to be a vector
             if ip_rank != 1:
                 out = np.reshape(out, [-1])
 
@@ -117,7 +123,7 @@ def plot_vector_field(result, xlabel='X', ylabel='Y'):
         visualized simultaneously.
     """
     if hasattr(result, 'numpy'):
-        result = result.numpy()  # convert tensor back to numpy
+        result = result.numpy()  # convert Tensor back to numpy
 
     result = np.squeeze(result)
 
