@@ -86,26 +86,26 @@ The scripts for the examples can be found in the `examples` folder, along with t
  
  The training should look similar to this:
  
-![ode spiral demo](https://github.com/titu1994/tfdiffeq/blob/master/examples/demo1.gif?raw=true)
+![ode spiral demo](https://github.com/titu1994/tfdiffeq/blob/master/images/demo1.gif?raw=true)
 
 - `spiral_ode_demo.py` : A basic example similar to above which contains a short implementation of learning a dynamics model to mimic a circular ODE.
 
  The training should look similar to this:
 
- ![ode circular demo](https://github.com/titu1994/tfdiffeq/blob/master/examples/circular_ode.gif?raw=true)
+ ![ode circular demo](https://github.com/titu1994/tfdiffeq/blob/master/images/circular_ode.gif?raw=true)
 
 - `lorenz_attractor.py` : A classic example of a chaotic solution for certain parameter sets and initial conditions.
 
 Note this is just a stress test for the library, and scipy.integrate.odefun can solve this much much faster due to highly
 optimized routines. This should take roughly 1 minute on a modern machine.
 
- ![lorenz attractor](https://github.com/titu1994/tfdiffeq/blob/master/examples/lorenz.png?raw=true)
+ ![lorenz attractor](https://github.com/titu1994/tfdiffeq/blob/master/images/lorenz.png?raw=true)
 
  - `latent_ode.py` : Another basic example which uses variational inference to learn a path along a spiral. 
  
  Results should be similar to below after 1200 iterations:
  
- ![ode spiral latent](https://github.com/titu1994/tfdiffeq/blob/master/examples/vis.png?raw=true)
+ ![ode spiral latent](https://github.com/titu1994/tfdiffeq/blob/master/images/vis.png?raw=true)
  
  - The ODENet on MNIST experiment has not been performed yet, as without Adjoint methods, it takes an enormous amount of memory and time.
  
