@@ -5,6 +5,7 @@ import scipy.linalg
 import tensorflow as tf
 
 tf.enable_eager_execution()
+from tfdiffeq import cast_double
 
 
 class ConstantODE(tf.keras.Model):
@@ -15,8 +16,7 @@ class ConstantODE(tf.keras.Model):
         self.b = tf.Variable(3.0, dtype=tf.float64)
 
     def call(self, t, y):
-        if t.dtype != y.dtype:
-            t = tf.cast(t, y.dtype)
+        t = cast_double(t)
 
         return self.a + (y - (self.a * t + self.b)) ** 5
 

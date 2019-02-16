@@ -67,20 +67,16 @@ class TestGradient(unittest.TestCase):
     #
     #     f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
     #
+    #     y0 = (y0,)
+    #
     #     func = lambda y0, t_points: tfdiffeq.odeint_adjoint(f, y0, t_points, method='dopri5')
     #
     #     with tf.GradientTape() as tape:
     #         tape.watch(t_points)
     #         ys = func(y0, t_points)
     #
-    #     # ys.backward(gradys)
-    #
-    #     # adj_y0_grad = y0.grad
     #     grads = tape.gradient(ys, [t_points, f.a, f.b])
     #     adj_t_grad, adj_a_grad, adj_b_grad = grads
-    #     # adj_t_grad = t_points.grad
-    #     # adj_a_grad = f.a.grad
-    #     # adj_b_grad = f.b.grad
     #
     #     # self.assertLess(max_abs(reg_y0_grad - adj_y0_grad), eps)
     #     self.assertLess(max_abs(reg_t_grad - adj_t_grad), eps)

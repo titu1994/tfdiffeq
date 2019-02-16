@@ -63,7 +63,7 @@ def OdeintAdjointMethod(*args):
         n_tensors = len(ans)
         f_params = tuple(variables)
 
-        # TODO: use a nn.Module and call odeint_adjoint to implement higher order derivatives.
+        # TODO: use a tf.keras.Model and call odeint_adjoint to implement higher order derivatives.
         def augmented_dynamics(t, y_aug):
             # Dynamics of the original system augmented with
             # the adjoint wrt y, and an integrator wrt t and args.
@@ -83,7 +83,7 @@ def OdeintAdjointMethod(*args):
             # print('adj y', [a.numpy().shape for a in adj_y])
 
             vjp_t, *vjp_y_and_params = tape.gradient(func_eval, (t,) + y + f_params,
-                                                     # tuple(-adj_y_ for adj_y_ in adj_y),
+                                                     # list(-adj_y_ for adj_y_ in adj_y),
                                                      )
 
             vjp_y = vjp_y_and_params[:n_tensors]
@@ -225,7 +225,7 @@ def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None
     # We need this in order to access the variables inside this module,
     # since we have no other way of getting variables along the execution path.
     if not isinstance(func, tf.keras.Model):
-        raise ValueError('func is required to be an instance of nn.Module.')
+        raise ValueError('func is required to be an instance of tf.keras.Model')
 
     with eager_mode():
         tensor_input = False
