@@ -5,7 +5,8 @@ import tensorflow as tf
 plt.style.use('seaborn-paper')
 
 
-def plot_phase_portrait(func, xlims=None, ylims=None, num_points=20, xlabel='X', ylabel='Y', ip_rank=None):
+def plot_phase_portrait(func, t0=None, xlims=None, ylims=None, num_points=20,
+                        xlabel='X', ylabel='Y', ip_rank=None):
     """
     Plots the phase portrait of a system of ODEs containing two dimensions.
 
@@ -16,6 +17,9 @@ def plot_phase_portrait(func, xlims=None, ylims=None, num_points=20, xlabel='X',
             if not specified, otherwise a tensor of rank = `ip_rank`.
             The function must emit exactly 2 outputs, in any shape as it
             will be flattened.
+
+        t0: Initial timestep value. Can be None, which defaults to a value
+            of 0.
 
         xlims: A list of 2 floating point numbers. Declares the range of
             the `x` space that will be plotted. If None, defaults to the
@@ -70,7 +74,9 @@ def plot_phase_portrait(func, xlims=None, ylims=None, num_points=20, xlabel='X',
 
     u = np.zeros_like(X)
     v = np.zeros_like(Y)
-    t = tf.convert_to_tensor(0.0, dtype=tf.float64)
+
+    t = t0 if t0 is not None else 0.0
+    t = tf.convert_to_tensor(t, dtype=tf.float64)
 
     for i in range(X.shape[0]):
         for j in range(X.shape[1]):
@@ -90,8 +96,7 @@ def plot_phase_portrait(func, xlims=None, ylims=None, num_points=20, xlabel='X',
                 out = out.numpy()
 
             # reshape the results to be a vector
-            if ip_rank != 1:
-                out = np.reshape(out, [-1])
+            out = np.squeeze(out)
 
             u[i, j] = out[0]
             v[i, j] = out[1]
