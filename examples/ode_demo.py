@@ -24,7 +24,7 @@ from tfdiffeq import odeint
 
 device = 'gpu:' + str(args.gpu) if tf.test.is_gpu_available() else 'cpu:0'
 
-true_y0 = tf.convert_to_tensor([[2., 0.]])
+true_y0 = tf.convert_to_tensor([[2., 0.]], dtype=tf.float64)
 t = tf.linspace(0., 25., args.data_size)
 true_A = tf.convert_to_tensor([[-0.1, 2.0], [-2.0, -0.1]], dtype=tf.float64)
 
@@ -32,7 +32,6 @@ true_A = tf.convert_to_tensor([[-0.1, 2.0], [-2.0, -0.1]], dtype=tf.float64)
 class Lambda(tf.keras.Model):
 
     def call(self, t, y):
-        y = tf.cast(y, tf.float64)
         return tf.matmul(y ** 3, true_A)
 
 

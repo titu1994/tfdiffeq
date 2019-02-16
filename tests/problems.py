@@ -5,7 +5,6 @@ import scipy.linalg
 import tensorflow as tf
 
 tf.enable_eager_execution()
-from tfdiffeq import cast_double
 
 
 class ConstantODE(tf.keras.Model):
@@ -16,8 +15,6 @@ class ConstantODE(tf.keras.Model):
         self.b = tf.Variable(3.0, dtype=tf.float64)
 
     def call(self, t, y):
-        t = cast_double(t)
-
         return self.a + (y - (self.a * t + self.b)) ** 5
 
     def y_exact(self, t):
@@ -31,9 +28,6 @@ class SineODE(tf.keras.Model):
         super(SineODE, self).__init__()
 
     def call(self, t, y):
-        if y.dtype != t.dtype:
-            y = tf.cast(y, t.dtype)
-
         return 2 * y / t + t ** 4 * tf.sin(2 * t) - t ** 2 + 4 * t ** 3
 
     def y_exact(self, t):

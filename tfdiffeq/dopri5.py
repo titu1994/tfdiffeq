@@ -6,7 +6,7 @@ from tfdiffeq.misc import (
 )
 from tfdiffeq.solvers import AdaptiveStepsizeODESolver
 from tfdiffeq.interp import _interp_fit, _interp_evaluate
-from .rk_common import _RungeKuttaState, _ButcherTableau, _runge_kutta_step
+from tfdiffeq.rk_common import _RungeKuttaState, _ButcherTableau, _runge_kutta_step
 
 _DORMAND_PRINCE_SHAMPINE_TABLEAU = _ButcherTableau(
     alpha=[1 / 5, 3 / 10, 4 / 5, 8 / 9, 1., 1.],
