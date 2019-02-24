@@ -44,7 +44,7 @@ def plot_phase_portrait(func, t0=None, xlims=None, ylims=None, num_points=20,
 
     Returns:
         Nothing is returned. The plot is not shown via plt.show() either,
-        therefore it must be explicitly called by the called using `plt.show()`.
+        therefore it must be explicitly called using `plt.show()`.
 
         This is done so that the phase plot and vector field plots can be
         visualized simultaneously.
@@ -114,7 +114,7 @@ def plot_vector_field(result, xlabel='X', ylabel='Y'):
     Args:
         result: a tf.Tensor or a numpy ndarray describing the result.
             Can be any rank with excess 1 dimensions. However, the
-            final dimension *must* have a dimension of 2.
+            final dimension *must* have a rank of 2.
 
         xlabel: Label of the X axis.
 
@@ -122,7 +122,7 @@ def plot_vector_field(result, xlabel='X', ylabel='Y'):
 
     Returns:
         Nothing is returned. The plot is not shown via plt.show() either,
-        therefore it must be explicitly called by the called using `plt.show()`.
+        therefore it must be explicitly called using `plt.show()`.
 
         This is done so that the phase plot and vector field plots can be
         visualized simultaneously.
@@ -142,3 +142,94 @@ def plot_vector_field(result, xlabel='X', ylabel='Y'):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.legend()
+
+
+def plot_results(time, result, labels=None, dependent_vars=False, **fig_args):
+    """
+    Plots the result of an integration call.
+
+    Args:
+        time: a tf.Tensor or a numpy ndarray describing the time steps
+            of integration. Can be any rank with excess 1 dimensions.
+            However, the final dimension *must* be a vector of rank 1.
+
+        result: a tf.Tensor or a numpy ndarray describing the result.
+            Can be any rank with excess 1 dimensions. However, the
+            final dimension *must* have a rank of 2.
+
+        labels: A list of strings for the variable names on the plot.
+
+        dependent_vars: If the resultant dimensions depend on each other,
+            then a 2-d or 3-d plot can be made to display their interaction.
+
+    Returns:
+        A Matplotlib Axes object for dependent variables, otherwise noting.
+        The plot is not shown via plt.show() either, therefore it must be
+        explicitly called using `plt.show()`.
+
+    """
+    if hasattr(time, 'numpy'):
+        time = time.numpy()  # convert Tensor back to numpy
+
+    if hasattr(result, 'numpy'):
+        result = result.numpy()  # convert Tensor back to numpy
+
+    # remove excess dimensions
+    time = np.squeeze(time)
+    result = np.squeeze(result)
+
+    if result.ndim == 1:
+        result = np.expand_dims(result, -1)  # treat result as a matrix always
+
+    if result.ndim != 2:
+        raise ValueError("`result` must be a matrix of shape [:, 2/3] after "
+                         "removal of excess dimensions.")
+
+    num_vars = result.shape[-1]
+
+    # setup labels
+    if labels is not None:
+        labels = list(labels)
+
+        if len(labels) != num_vars:
+            raise ValueError("If labels are provided, there must be one label "
+                             "per variable in the result matrix. Found %d "
+                             "labels for %d variables." % (len(labels), num_vars))
+
+    else:
+        labels = ["v%d" % (v_id + 1) for v_id in range(num_vars)]
+
+    if not dependent_vars:
+        for var_id, var_label in enumerate(labels):
+            plt.plot(time, result[:, var_id], label=var_label)
+
+        plt.legend()
+
+    else:
+        if num_vars not in (2, 3):
+            raise ValueError("For dependent variable plotting, only 2 or 3 variables "
+                             "are supported. Provided number of variables = %d" % num_vars)
+
+        if num_vars == 2:
+            fig = plt.figure(**fig_args)
+            ax = fig.gca()
+
+            ax.set_xlabel(labels[0])
+            ax.set_ylabel(labels[1])
+
+            ax.plot(result[:, 0], result[:, 1])
+
+        elif num_vars == 3:
+            from mpl_toolkits.mplot3d import Axes3D  # needed for plotting in 3d
+            _ = Axes3D
+
+            fig = plt.figure(**fig_args)
+            ax = fig.gca(projection='3d')
+
+            ax.set_xlabel(labels[0])
+            ax.set_ylabel(labels[1])
+            ax.set_zlabel(labels[2])
+
+            ax.plot(result[:, 0], result[:, 1], result[:, 2])
+
+        return ax
