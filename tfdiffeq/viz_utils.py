@@ -189,7 +189,8 @@ def plot_results(time, result, labels=None, dependent_vars=False, **fig_args):
 
     # setup labels
     if labels is not None:
-        labels = list(labels)
+        if type(labels) not in (list, tuple):
+            labels = [labels]
 
         if len(labels) != num_vars:
             raise ValueError("If labels are provided, there must be one label "
