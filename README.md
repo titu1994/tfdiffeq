@@ -7,7 +7,7 @@ All credits for the codebase go to [@rtqichen](https://github.com/rtqichen) for 
 
 Similar to the PyTorch codebase, this library provides ordinary differential equation (ODE) solvers implemented in Tensorflow Eager. For usage of ODE solvers in deep learning applications, see [Neural Ordinary Differential Equations paper](https://arxiv.org/abs/1806.07366).
 
-As the solvers are implemented in Tensorflow, algorithms in this repository are fully supported to run on the GPU.
+As the solvers are implemented in Tensorflow, algorithms in this repository fully support running on the GPU, and are differentiable.
 
 ## Caveats
 
@@ -77,7 +77,7 @@ Backpropagation through odeint goes through the internals of the solver, but thi
 
 Since tensorflow doesn't yet support global setting of default datatype, the `tfdiffeq` library provides a few convenience methods.
 
-- `move_do_device` : Attempts to move a `tf.Tensor` to a certain device. Can specify the device in the normal syntax of `cpu:0` or `gpu:x` where `x` must be replaced by any number representing the GPU ID. Falls back to CPU if GPU is unavailable.
+- `move_to_device` : Attempts to move a `tf.Tensor` to a certain device. Can specify the device in the normal syntax of `cpu:0` or `gpu:x` where `x` must be replaced by any number representing the GPU ID. Falls back to CPU if GPU is unavailable.
 
 - `cast_double` : Casts either a single `tf.Tensor` or a list of tensors to the `tf.float64` datatype.
 
@@ -93,7 +93,7 @@ The scripts for the examples can be found in the `examples` folder, along with t
  
 ![ode spiral demo](https://github.com/titu1994/tfdiffeq/blob/master/images/demo1.gif?raw=true)
 
-- `spiral_ode_demo.py` : A basic example similar to above which contains a short implementation of learning a dynamics model to mimic a circular ODE.
+- `circular_ode_demo.py` : A basic example similar to above which contains a short implementation of learning a dynamics model to mimic a circular ODE.
 
  The training should look similar to this:
 
