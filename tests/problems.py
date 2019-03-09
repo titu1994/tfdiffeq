@@ -4,7 +4,7 @@ import numpy as np
 import scipy.linalg
 import tensorflow as tf
 
-if not tf.executing_eagerly():
+if tf.version.VERSION.startswith("1."):
     tf.enable_eager_execution()
 
 

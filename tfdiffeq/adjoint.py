@@ -229,7 +229,7 @@ def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None
 
     with eager_mode():
         tensor_input = False
-        if tf.is_numeric_tensor(y0):
+        if tf.debugging.is_numeric_tensor(y0):
             class TupleFunc(tf.keras.Model):
 
                 def __init__(self, base_func, **kwargs):

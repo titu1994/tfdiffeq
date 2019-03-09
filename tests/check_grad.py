@@ -26,7 +26,7 @@ def allclose(x, y, rtol=1e-5, atol=1e-8):
 
 def make_jacobian(input, num_out):
     if isinstance(input, tf.Tensor):
-        if not tf.is_numeric_tensor(input):
+        if not tf.debugging.is_numeric_tensor(input):
             return None
         if not _requires_grad(input):
             return None
