@@ -14,10 +14,10 @@ matrix:
 # command to install dependencies
 install:
   - pip install -e .[tests]
-  - if [["$API_LEVEL" == "TF2"]]; then
-    pip install tf-nightly-2.0-preview
+  - if [[ "$API_LEVEL" == "TF2" ]]; then
+    pip install tf-nightly-2.0-preview;
     else
-    pip install tensorflow
+    pip install tensorflow;
     fi
 # command to run tests
 script:
