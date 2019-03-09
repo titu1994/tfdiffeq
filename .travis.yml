@@ -7,12 +7,12 @@ matrix:
       sudo: yes
       dist: xenial
       env: API_LEVEL=TF1
-    - python: 3.5
-      env: API_LEVEL=TF2
-    - python: 3.7
-      sudo: yes
-      dist: xenial
-      env: API_LEVEL=TF2
+    # - python: 3.5
+    #   env: API_LEVEL=TF2
+    # - python: 3.7
+    #   sudo: yes
+    #   dist: xenial
+    #   env: API_LEVEL=TF2
 # command to install dependencies
 install:
   - pip install -e .[tests]

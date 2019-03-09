@@ -378,7 +378,7 @@ def _check_inputs(func, y0, t):
 
     for y0_ in y0:
         if not tf.debugging.is_numeric_tensor(y0_):
-            raise TypeError('`y0` must be a floating point Tensor but is a {}'.format(y0_.type()))
+            raise TypeError('`y0` must be a floating point Tensor but is a {}'.format(y0_.dtype))
     if not tf.debugging.is_numeric_tensor(t):
         raise TypeError('`t` must be a floating point Tensor but is a {}'.format(t.dtype))
 
