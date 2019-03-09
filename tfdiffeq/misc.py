@@ -184,7 +184,7 @@ def _convert_to_tensor(a, dtype=None, device=None):
 
 
 def _is_finite(tensor):
-    _check = tf.cast(tf.is_inf(tensor), tf.int64) + tf.cast(tf.is_nan(tensor), tf.int64)
+    _check = tf.cast(tf.math.is_inf(tensor), tf.int64) + tf.cast(tf.math.is_nan(tensor), tf.int64)
     _check = tf.cast(_check, tf.bool)
     return not tf.reduce_any(_check)
 

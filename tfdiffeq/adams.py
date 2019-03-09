@@ -7,6 +7,7 @@ from tfdiffeq.misc import (
     _optimal_step_size, _compute_error_ratio, move_to_device
 )
 from tfdiffeq.solvers import AdaptiveStepsizeODESolver
+from tfdiffeq import compat
 
 _MIN_ORDER = 1
 _MAX_ORDER = 12
@@ -35,7 +36,8 @@ def g_and_explicit_phi(prev_t, next_t, implicit_phi, k):
     explicit_phi = collections.deque(maxlen=k)
     beta = move_to_device(tf.convert_to_tensor(1.), prev_t[0].device)
 
-    tf.assign(g[0], 1)
+    # tf.assign(g[0], 1)
+    compat.assign(g[0], 1)
 
     c = 1 / move_to_device(tf.range(1, k + 2), prev_t[0].device)
     explicit_phi.append(implicit_phi[0])
@@ -48,11 +50,13 @@ def g_and_explicit_phi(prev_t, next_t, implicit_phi, k):
         explicit_phi.append(tuple(iphi_ * beat_cast for iphi_ in implicit_phi[j]))
 
         c = c[:-1] - c[1:] if j == 1 else c[:-1] - c[1:] * dt / (next_t - prev_t[j - 1])
-        tf.assign(g[j], tf.cast(c[0], g[j].dtype))
+        # tf.assign(g[j], tf.cast(c[0], g[j].dtype))
+        compat.assign(g[j], tf.cast(c[0], g[j].dtype))
         # g[j] = c[0]
 
     c = c[:-1] - c[1:] * dt / (next_t - prev_t[k - 1])
-    tf.assign(g[k], tf.cast(c[0], g[k].dtype))
+    # tf.assign(g[k], tf.cast(c[0], g[k].dtype))
+    compat.assign(g[k], tf.cast(c[0], g[k].dtype))
 
     return g, explicit_phi
 
