@@ -115,6 +115,42 @@ def _flatten_convert_none_to_zeros(sequence, like_sequence):
     return tf.concat(flat, 0) if len(flat) > 0 else tf.convert_to_tensor([])
 
 
+def _flatten_recover(sequence):
+    shapes = [p.shape for p in sequence]
+    numels = [tf.cast(tf.reduce_prod(shape), tf.int32).numpy() for shape in shapes]
+
+    flat = [tf.reshape(p, [-1]) for p in sequence]
+    out = tf.concat(flat, 0) if len(flat) > 0 else tf.convert_to_tensor([])
+
+    def _recover_shapes(flat):
+        params_splits = tf.split(flat, numels)
+        param_list = [tf.reshape(p, shape)
+                      for p, shape in zip(params_splits, shapes)]
+
+        return param_list
+
+    return out, _recover_shapes
+
+
+def _flatten_convert_none_to_zeros_recover(sequence, like_sequence):
+    shapes = [p.shape if p is not None else q.shape for p, q in zip(sequence, like_sequence)]
+    numels = [tf.cast(tf.reduce_prod(shape), tf.int32).numpy() for shape in shapes]
+
+    flat = [
+        tf.reshape(p, [-1]) if p is not None else tf.reshape(tf.zeros_like(q), [-1])
+        for p, q in zip(sequence, like_sequence)
+    ]
+    out = tf.concat(flat, 0) if len(flat) > 0 else tf.convert_to_tensor([])
+
+    def _recover_shapes(flat):
+        params_splits = tf.split(flat, numels)
+        param_list = [tf.reshape(p, shape)
+                      for p, shape in zip(params_splits, shapes)]
+
+        return param_list
+
+    return out, _recover_shapes
+
 def _possibly_nonzero(x):
     return isinstance(x, tf.Tensor) or x != 0
 
@@ -341,9 +377,9 @@ def _check_inputs(func, y0, t):
         func = lambda t, y: tuple(-f_ for f_ in _base_reverse_func(-t, y))
 
     for y0_ in y0:
-        if not tf.is_numeric_tensor(y0_):
+        if not tf.debugging.is_numeric_tensor(y0_):
             raise TypeError('`y0` must be a floating point Tensor but is a {}'.format(y0_.type()))
-    if not tf.is_numeric_tensor(t):
+    if not tf.debugging.is_numeric_tensor(t):
         raise TypeError('`t` must be a floating point Tensor but is a {}'.format(t.dtype))
 
     return tensor_input, func, y0, t
