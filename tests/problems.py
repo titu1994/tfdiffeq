@@ -4,7 +4,8 @@ import numpy as np
 import scipy.linalg
 import tensorflow as tf
 
-tf.enable_eager_execution()
+if not tf.executing_eagerly():
+    tf.enable_eager_execution()
 
 
 class ConstantODE(tf.keras.Model):
