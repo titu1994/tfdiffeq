@@ -31,9 +31,9 @@ setup(
                       'matplotlib>=3.0.0; python_version > "3.0"',
                       'six>=1.11.0'],
     extras_require={
-        'tests': ['tensorflow', 'six>=1.11.0'],
-        'tf': ['tensorflow>=1.12'],
-        'tf-gpu': ['tensorflow-gpu>=1.12.0'],
+        'tests': ['six>=1.11.0'],
+        'tf': ['tensorflow>=1.13.1'],
+        'tf-gpu': ['tensorflow-gpu>=1.13.1'],
     },
     classifiers=(
         "Programming Language :: Python :: 3.5",
