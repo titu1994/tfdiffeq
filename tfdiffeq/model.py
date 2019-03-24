@@ -34,5 +34,6 @@ class ODEModel(tf.keras.Model):
             a cached tf.Tensor which is the gradient.
         """
         if self.dy is None:
-            self.dy = tf.zeros_like(y, dtype=y.dtype)
-            self.dy = move_to_device(self.dy, y)
+            dy = tf.zeros_like(y, dtype=y.dtype)
+            dy = move_to_device(dy, y)
+            self.dy = tf.Variable(dy, trainable=False, dtype=dy.dtype)
