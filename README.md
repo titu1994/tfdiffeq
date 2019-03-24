@@ -136,7 +136,7 @@ pip install .[tf-gpu]  # for gpu
 pip install .[tests]  # for cpu testing
 ```
  
- - Tensorflow 1.12.0 or above. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
+ - Tensorflow 1.12.0 or above / TF 2. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
  - matplotlib
  - numpy
  - scipy (for tests)

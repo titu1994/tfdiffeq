@@ -3,6 +3,7 @@ import math
 import numpy as np
 import scipy.linalg
 import tensorflow as tf
+import tfdiffeq
 
 if tf.version.VERSION.startswith("1."):
     tf.enable_eager_execution()
@@ -23,6 +24,22 @@ class ConstantODE(tf.keras.Model):
         return self.a * t + self.b
 
 
+class ConstantODECached(tfdiffeq.ODEModel):
+
+    def __init__(self):
+        super(ConstantODECached, self).__init__()
+        self.a = tf.Variable(0.2, dtype=tf.float64)
+        self.b = tf.Variable(3.0, dtype=tf.float64)
+
+    def call(self, t, y):
+        self.allocate_gradients(y)
+        self.dy = self.a + (y - (self.a * t + self.b)) ** 5
+
+    def y_exact(self, t):
+        t = tf.cast(t, tf.float64)
+        return self.a * t + self.b
+
+
 class SineODE(tf.keras.Model):
 
     def __init__(self):
@@ -30,6 +47,22 @@ class SineODE(tf.keras.Model):
 
     def call(self, t, y):
         return 2 * y / t + t ** 4 * tf.sin(2 * t) - t ** 2 + 4 * t ** 3
+
+    def y_exact(self, t):
+        t = tf.cast(t, tf.float64)
+        return -0.5 * t ** 4 * tf.cos(2 * t) + 0.5 * t ** 3 * tf.sin(2 * t) + 0.25 * t ** 2 * tf.cos(
+            2 * t
+        ) - t ** 3 + 2 * t ** 4 + (math.pi - 0.25) * t ** 2
+
+
+class SineODECached(tfdiffeq.ODEModel):
+
+    def __init__(self):
+        super(SineODECached, self).__init__()
+
+    def call(self, t, y):
+        self.allocate_gradients(y)
+        self.dy = 2 * y / t + t ** 4 * tf.sin(2 * t) - t ** 2 + 4 * t ** 3
 
     def y_exact(self, t):
         t = tf.cast(t, tf.float64)
@@ -66,7 +99,38 @@ class LinearODE(tf.keras.Model):
         return v
 
 
-PROBLEMS = {'constant': ConstantODE, 'linear': LinearODE, 'sine': SineODE}
+class LinearODECached(tfdiffeq.ODEModel):
+
+    def __init__(self, dim=10):
+        super(LinearODECached, self).__init__()
+        self.dim = dim
+        U = np.random.randn(dim, dim) * 0.1
+        A = 2 * U - (U + U.transpose(0, 1))
+        self.A = tf.Variable(A)
+        self.initial_val = np.ones((dim, 1))
+
+    def call(self, t, y):
+        self.allocate_gradients(y)
+
+        y = tf.reshape(y, [self.dim, 1])
+        out = tf.matmul(self.A, y)
+        self.dy = tf.reshape(out, [-1])
+
+    def y_exact(self, t):
+        t = tf.cast(t, tf.float64)
+        t = t.numpy()
+        A_np = self.A.numpy()
+        ans = []
+        for t_i in t:
+            ans.append(np.matmul(scipy.linalg.expm(A_np * t_i), self.initial_val))
+        v = tf.stack([tf.Variable(ans_) for ans_ in ans])
+        v = tf.reshape(v, [t.shape[0], self.dim])
+        return v
+
+
+PROBLEMS = {'constant': ConstantODE, 'linear': LinearODE, 'sine': SineODE,
+            'cached_constant': ConstantODECached, 'cached_linear': LinearODECached,
+            'cached_sine': SineODECached}
 
 
 def construct_problem(device, npts=10, ode='constant', reverse=False):
