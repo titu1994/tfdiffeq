@@ -106,13 +106,21 @@ optimized routines. This should take roughly 1 minute on a modern machine.
 
  ![lorenz attractor](https://github.com/titu1994/tfdiffeq/blob/master/images/lorenz.png?raw=true)
 
- - `latent_ode.py` : Another basic example which uses variational inference to learn a path along a spiral. 
+- `latent_ode.py` : Another basic example which uses variational inference to learn a path along a spiral.
  
  Results should be similar to below after 1200 iterations:
  
  ![ode spiral latent](https://github.com/titu1994/tfdiffeq/blob/master/images/vis.png?raw=true)
 
- - The ODENet on MNIST experiment has not been performed yet, as without Adjoint methods, it takes an enormous amount of memory and time.
+- `ODENet` on MNIST
+
+ While the Adjoint method is not yet implemented, a smaller version of ODENet can be easily trained using the
+ fixed grid solvers - `Euler` or `Huens` for a fast approximate solution. It has been observed that as MNIST is
+ an extremely easy problem, RK45 (DOPRI5) works relatively well, whereas on more complex datasets like CIFAR 10/100
+ it diverges in the first epoch.
+
+ Reference :
+ - [ANODE: Unconditionally Accurate Memory-Efficient Gradients for Neural ODEs](https://arxiv.org/abs/1902.10298)
  
 # Reference
 If you found this library useful in your research, please consider citing
