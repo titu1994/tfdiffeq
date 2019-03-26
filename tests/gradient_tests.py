@@ -19,6 +19,12 @@ def max_abs(tensor):
 
 class TestGradient(unittest.TestCase):
 
+    def test_huen(self):
+        f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
+
+        func = lambda y0, t_points: tfdiffeq.odeint(f, y0, t_points, method='huen')
+        self.assertTrue(gradcheck(func, (y0, t_points)))
+
     def test_midpoint(self):
         f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
 

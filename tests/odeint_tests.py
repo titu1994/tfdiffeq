@@ -36,6 +36,12 @@ class TestSolverError(unittest.TestCase):
         y = tfdiffeq.odeint(f, y0, t_points, method='midpoint')
         self.assertLess(rel_error(sol, y), error_tol)
 
+    def test_huen(self):
+        f, y0, t_points, sol = problems.construct_problem(TEST_DEVICE)
+
+        y = tfdiffeq.odeint(f, y0, t_points, method='huen')
+        self.assertLess(rel_error(sol, y), error_tol)
+
     def test_rk4(self):
         f, y0, t_points, sol = problems.construct_problem(TEST_DEVICE)
 
