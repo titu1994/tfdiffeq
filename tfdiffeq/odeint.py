@@ -3,7 +3,7 @@ from tensorflow.python.eager.context import eager_mode
 from tfdiffeq.adams import VariableCoefficientAdamsBashforth
 from tfdiffeq.dopri5 import Dopri5Solver
 from tfdiffeq.fixed_adams import AdamsBashforth, AdamsBashforthMoulton
-from tfdiffeq.fixed_grid import Euler, Midpoint, RK4
+from tfdiffeq.fixed_grid import Euler, Midpoint, RK4, Huen
 from tfdiffeq.misc import _check_inputs
 from tfdiffeq.tsit5 import Tsit5Solver
 
@@ -16,6 +16,7 @@ SOLVERS = {
     'euler': Euler,
     'midpoint': Midpoint,
     'rk4': RK4,
+    'huen': Huen,
 }
 
 
