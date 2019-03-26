@@ -5,7 +5,6 @@ import time
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import ops
 
 from tfdiffeq import odeint
 
@@ -14,13 +13,13 @@ tf.enable_eager_execution()
 parser = argparse.ArgumentParser()
 parser.add_argument('--network', type=str, choices=['resnet', 'odenet'], default='odenet')
 parser.add_argument('--tol', type=float, default=1e-4)
-parser.add_argument('--method', type=str, choices=['dopri5', 'adams', 'fixed_adams'], default='dopri5')
+parser.add_argument('--method', type=str, choices=['dopri5', 'adams', 'euler', 'huen'], default='euler')
 # parser.add_argument('--adjoint', type=eval, default=False, choices=[True, False])
 parser.add_argument('--downsampling-method', type=str, default='conv', choices=['conv', 'res'])
 parser.add_argument('--nepochs', type=int, default=160)
-parser.add_argument('--data_aug', type=eval, default=True, choices=[True, False])
+parser.add_argument('--data_aug', type=eval, default=False, choices=[True, False])
 parser.add_argument('--lr', type=float, default=0.1)
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--test_batch_size', type=int, default=1000)
 
 parser.add_argument('--save', type=str, default='./mnist')
@@ -254,7 +253,7 @@ class ResBlock(tf.keras.Model):
 
 class ConcatConv2d(tf.keras.Model):
 
-    def __init__(self, dim_in, dim_out, ksize=3, stride=1, padding=0, dilation=1, groups=1, bias=True, transpose=False):
+    def __init__(self, dim_in, dim_out, ksize=3, stride=1, padding=0, dilation=1, bias=True, transpose=False):
         super(ConcatConv2d, self).__init__()
         module = tf.keras.layers.Conv2DTranspose if transpose else tf.keras.layers.Conv2D
 
@@ -362,7 +361,7 @@ def get_mnist_loaders(data_aug=False, batch_size=128, test_batch_size=100, perc=
     y_test = tf.one_hot(y_test, 10)
 
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    train_dataset = train_dataset.shuffle(1000)
+    train_dataset = train_dataset.shuffle(10000)
 
     if data_aug:
         def augment(x, y):
@@ -376,19 +375,16 @@ def get_mnist_loaders(data_aug=False, batch_size=128, test_batch_size=100, perc=
         train_dataset = train_dataset.batch(batch_size)
 
     # train_dataset = train_dataset.apply(tf.data.experimental.prefetch_to_device(device))
-    train_dataset = iter(train_dataset)
 
     # evaluate the train dataset
     eval_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    eval_dataset = eval_dataset.batch(test_batch_size, drop_remainder=True)
+    eval_dataset = eval_dataset.batch(test_batch_size)
     # eval_dataset = eval_dataset.apply(tf.data.experimental.prefetch_to_device(device))
-    eval_dataset = iter(eval_dataset)
 
     # test dataset
     test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
     test_dataset = test_dataset.batch(test_batch_size)
     # test_dataset = test_dataset.apply(tf.data.experimental.prefetch_to_device(device))
-    test_dataset = iter(test_dataset)
 
     return train_dataset, test_dataset, eval_dataset
 
@@ -405,18 +401,18 @@ def inf_generator(iterable):
             iterator = iter(iterable)
 
 
-def learning_rate_with_decay(batch_size, batch_denom, batches_per_epoch, boundary_epochs, decay_rates):
-    initial_learning_rate = args.lr * batch_size / batch_denom
-
-    boundaries = [int(batches_per_epoch * epoch) for epoch in boundary_epochs]
-    vals = [initial_learning_rate * decay for decay in decay_rates]
-
-    def learning_rate_fn(itr):
-        lt = [itr < b for b in boundaries] + [True]
-        i = np.argmax(lt)
-        return vals[i]
-
-    return learning_rate_fn
+# def learning_rate_with_decay(batch_size, batch_denom, batches_per_epoch, boundary_epochs, decay_rates):
+#     initial_learning_rate = args.lr * batch_size / batch_denom
+#
+#     boundaries = [int(batches_per_epoch * epoch) for epoch in boundary_epochs]
+#     vals = [initial_learning_rate * decay for decay in decay_rates]
+#
+#     def learning_rate_fn(itr):
+#         lt = [itr < b for b in boundaries] + [True]
+#         i = np.argmax(lt)
+#         return vals[i]
+#
+#     return learning_rate_fn
 
 
 def one_hot(x, K):
@@ -427,8 +423,8 @@ def accuracy(model, dataset_loader):
     total_correct = 0
     print("Evaluating dataset ...")
     samples = 0
-    for x, y in dataset_loader:
-        target_class = np.argmax(y, axis=1)
+    for i, (x, y) in enumerate(dataset_loader):
+        target_class = np.argmax(y.numpy(), axis=1)
         predicted_class = np.argmax(model(x).numpy(), axis=1)
         total_correct += np.sum(predicted_class == target_class)
         samples += x.shape.as_list()[0]
@@ -473,7 +469,6 @@ logger.info(args)
 
 device = 'gpu:' + str(args.gpu) if tf.test.is_gpu_available() else 'cpu:0'
 with tf.device(device):
-# with open(os.devnull, 'w'):
     is_odenet = args.network == 'odenet'
 
     if args.downsampling_method == 'conv':
@@ -499,7 +494,7 @@ with tf.device(device):
                  tf.keras.layers.ReLU(),
                  tf.keras.layers.AveragePooling2D((1, 1)),
                  Flatten(),
-                 tf.keras.layers.Dense(10)]
+                 tf.keras.layers.Dense(10, activation='softmax')]
 
     layers = (*downsampling_layers, *feature_layers, *fc_layers)
     print("Nnm layers", len(layers))
@@ -511,16 +506,16 @@ with tf.device(device):
     )
 
     # data_gen = inf_generator(train_loader)
-    batches_per_epoch = 60000 // args.batch_size
+    # batches_per_epoch = 60000 // args.batch_size
 
     global_step = tf.train.get_or_create_global_step()
     num_steps_per_epoch = 60000 // args.batch_size
     boundary_epochs = [60, 100, 140]
     boundary_iterations = [num_steps_per_epoch * e for e in boundary_epochs]
-    lrs = [0.1, 0.05, 0.01, 0.001]
+    lrs = [0.001, 0.0005, 0.0001, 0.00005]
 
     learning_rate = tf.train.piecewise_constant(global_step, boundary_iterations, lrs)
-    optimizer = tf.train.MomentumOptimizer(learning_rate, momentum=0.9, use_nesterov=True)
+    optimizer = tf.train.AdamOptimizer(learning_rate)
 
     best_acc = 0
     batch_time_meter = RunningAverageMeter()
@@ -532,50 +527,48 @@ with tf.device(device):
                                 optimizer=optimizer,
                                 global_step=global_step)
 
-    for itr in range(args.nepochs * batches_per_epoch):
+    for epoch in range(args.nepochs):
+        for x, y in iter(train_loader):
+            # optimizer.zero_grad()
+            with tf.GradientTape() as tape:
+                logits = model(x)
+                loss = tf.keras.losses.categorical_crossentropy(logits, y)
 
-        # optimizer.zero_grad()
-        with tf.GradientTape() as tape:
-            x, y = next(train_loader)
-            logits = model(x)
-            loss = tf.keras.losses.categorical_crossentropy(logits, y)
+            if is_odenet:
+                nfe_forward = feature_layers[0].nfe
+                feature_layers[0].nfe = 0
 
-        if is_odenet:
-            nfe_forward = feature_layers[0].nfe
-            feature_layers[0].nfe = 0
+            grads = tape.gradient(loss, model.variables)
+            grad_vars = zip(grads, model.variables)
 
-        grads = tape.gradient(loss, model.variables)
-        grad_vars = zip(grads, model.variables)
+            optimizer.apply_gradients(grad_vars, global_step)
 
-        optimizer.apply_gradients(grad_vars, global_step)
+            if is_odenet:
+                nfe_backward = feature_layers[0].nfe
+                feature_layers[0].nfe = 0
 
-        if is_odenet:
-            nfe_backward = feature_layers[0].nfe
-            feature_layers[0].nfe = 0
+            batch_time_meter.update(time.time() - end)
+            if is_odenet:
+                f_nfe_meter.update(nfe_forward)
+                b_nfe_meter.update(nfe_backward)
+            end = time.time()
 
-        batch_time_meter.update(time.time() - end)
-        if is_odenet:
-            f_nfe_meter.update(nfe_forward)
-            b_nfe_meter.update(nfe_backward)
-        end = time.time()
+        train_acc = accuracy(model, train_eval_loader)
+        val_acc = accuracy(model, test_loader)
 
-        if itr % batches_per_epoch == 0:
-            train_acc = accuracy(model, train_eval_loader)
-            val_acc = accuracy(model, test_loader)
+        if val_acc > best_acc:
+            path = os.path.join(args.save, 'model')
 
-            if val_acc > best_acc:
-                path = os.path.join(args.save, 'model')
+            saver.save(path)
+            best_acc = val_acc
 
-                saver.save(path)
-                best_acc = val_acc
-
-            logger.info(
-                "Epoch {:04d} | Time {:.3f} ({:.3f}) | NFE-F {:.1f} | NFE-B {:.1f} | "
-                "Train Acc {:.4f} | Test Acc {:.4f}".format(
-                    itr // batches_per_epoch, batch_time_meter.val, batch_time_meter.avg, f_nfe_meter.avg,
-                    b_nfe_meter.avg, train_acc, val_acc
-                )
+        logger.info(
+            "Epoch {:04d} | Time {:.3f} ({:.3f}) | NFE-F {:.1f} | NFE-B {:.1f} | "
+            "Train Acc {:.4f} | Test Acc {:.4f}".format(
+                epoch, batch_time_meter.val, batch_time_meter.avg, f_nfe_meter.avg,
+                b_nfe_meter.avg, train_acc, val_acc
             )
+        )
 
     logger.info('Number of parameters: {}'.format(model.count_params()))
     logger.info('Model Info:')
