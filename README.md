@@ -69,6 +69,7 @@ Backpropagation through odeint goes through the internals of the solver, but thi
 
  - `euler`: Euler method.
  - `midpoint`: Midpoint method.
+ - `huen`: Second-order Runge-Kutta.
  - `rk4`: Fourth-order Runge-Kutta with 3/8 rule.
  - `explicit_adams`: Explicit Adams.
  - `fixed_adams`: Implicit Adams

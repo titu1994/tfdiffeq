@@ -30,10 +30,10 @@ class Huen(FixedGridODESolver):
 
     @func_cast_double
     def step_func(self, func, t, dt, y):
-        ft_1_hat = tuple(y_ + dt * f_ for y_, f_ in zip(y, cast_double(func(t, y))))
-        return tuple(dt / 2. * (ft_ + ft_1_hat_) for ft_, ft_1_hat_ in zip(cast_double(func(t, y)),
-                                                                           cast_double(func(t + dt,
-                                                                                            ft_1_hat))))
+        f_outs = cast_double(func(t, y))
+        ft_1_hat = tuple(y_ + dt * f_ for y_, f_ in zip(y, f_outs))
+        ft_1_outs = cast_double(func(t + dt, ft_1_hat))
+        return tuple(dt / 2. * (ft_ + ft_1_hat_) for ft_, ft_1_hat_ in zip(f_outs, ft_1_outs))
 
     @property
     def order(self):
