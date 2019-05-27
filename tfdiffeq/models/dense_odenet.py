@@ -146,11 +146,12 @@ class ODEBlock(tf.keras.Model):
                     aug = tf.zeros([batch_size, height, width,
                                     self.odefunc.augment_dim])
 
+                aug = tf.cast(aug, x.dtype)
                 # Shape (batch_size, channels + augment_dim, height, width)
                 x_aug = tf.concat([x, aug], axis=self.channel_axis)
             else:
                 # Add augmentation
-                aug = tf.zeros([x.shape[0], self.odefunc.augment_dim])
+                aug = tf.zeros([x.shape[0], self.odefunc.augment_dim], dtype=x.dtype)
                 # Shape (batch_size, data_dim + augment_dim)
                 x_aug = tf.concat([x, aug], axis=-1)
         else:

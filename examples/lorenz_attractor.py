@@ -40,7 +40,7 @@ initial_state = tf.convert_to_tensor([1., 1., 1.], dtype=tf.float64)
 sigma = 10.
 beta = 8. / 3.
 rho = 28.
-
+Lorenz().compile
 
 with tf.device(device):
     t1 = time.time()
