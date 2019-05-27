@@ -68,7 +68,8 @@ class ODEFunc(tf.keras.Model):
             # Shape (batch_size, data_dim + 1)
             t_and_x = tf.concat([t_vec, x], axis=-1)
             # Shape (batch_size, hidden_dim)
-            out = self.fc1(t_and_x)
+            # TODO: Remove cast when Keras supports double
+            out = self.fc1(tf.cast(t_and_x, tf.float32))
         else:
             out = self.fc1(x)
         out = self.non_linearity(out)
