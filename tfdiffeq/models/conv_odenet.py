@@ -171,7 +171,7 @@ class ConvODENet(tf.keras.Model):
         features = self.odeblock(x, training=training)
         features = tf.reshape([features.shape[0], -1])
 
-        pred = self.linear_layer(features)
+        pred = self.linear_layer(tf.cast(features, tf.float32))
 
         if return_features:
             return features, pred

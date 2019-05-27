@@ -233,7 +233,7 @@ class ODENet(tf.keras.Model):
 
     def call(self, x, training=None, return_features=False):
         features = self.odeblock(x, training=training)
-        pred = self.linear_layer(features)
+        pred = self.linear_layer(tf.cast(features, tf.float32))
         if return_features:
             return features, pred
         return pred
