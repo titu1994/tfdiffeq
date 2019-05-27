@@ -32,11 +32,11 @@ class Conv2dTime(tf.keras.Model):
         # t = tf.cast(t, tf.float32)
         if self.channel_axis == 1:
             # Shape (batch_size, 1, height, width)
-            tt = tf.ones_like(x[:, :1, :, :]) * t  # channel dim = 1
+            tt = tf.ones_like(x[:, :1, :, :], dtype=t.dtype) * t  # channel dim = 1
 
         else:
             # Shape (batch_size, height, width, 1)
-            tt = tf.ones_like(x[:, :, :, :1]) * t  # channel dim = -1
+            tt = tf.ones_like(x[:, :, :, :1], dtype=t.dtype) * t  # channel dim = -1
 
         ttx = tf.concat([tt, x], axis=self.channel_axis)  # concat at channel dim
 

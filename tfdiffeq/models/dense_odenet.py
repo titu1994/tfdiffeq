@@ -64,7 +64,7 @@ class ODEFunc(tf.keras.Model):
         self.nfe += 1
         if self.time_dependent:
             # Shape (batch_size, 1)
-            t_vec = tf.ones([x.shape[0], 1]) * t
+            t_vec = tf.ones([x.shape[0], 1], dtype=t.dtype) * t
             # Shape (batch_size, data_dim + 1)
             t_and_x = tf.concat([t_vec, x], axis=-1)
             # Shape (batch_size, hidden_dim)
