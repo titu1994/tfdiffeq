@@ -7,7 +7,10 @@ All credits for the codebase go to [@rtqichen](https://github.com/rtqichen) for 
 
 Similar to the PyTorch codebase, this library provides ordinary differential equation (ODE) solvers implemented in Tensorflow Eager. For usage of ODE solvers in deep learning applications, see [Neural Ordinary Differential Equations paper](https://arxiv.org/abs/1806.07366).
 
-As the solvers are implemented in Tensorflow, algorithms in this repository fully support running on the GPU, and are differentiable.
+Supports Augmented Neural ODE Architectures from the paper [Augmented Neural ODEs](https://arxiv.org/abs/1904.01681) as well, which has been shown to solve certain problems that Neural ODEs may struggle with.
+
+
+As the solvers are implemented in Tensorflow, algorithms in this repository fully support running on the GPU, and are differentiable. Also supports prebuilt ODENet and ConvODENet tf.keras Models that can be used as is or embedded in a larger architecture. 
 
 ## Caveats
 
@@ -51,6 +54,29 @@ where `func` is any callable implementing the ordinary differential equation `f(
 Backpropagation through odeint goes through the internals of the solver, but this is not supported for all solvers. Instead, we encourage the use of the adjoint method explained in [Neural Ordinary Differential Equations paper](https://arxiv.org/abs/1806.07366), which will allow solving with as many steps as necessary due to O(1) memory usage.
 
 **NOTE: As of now, adjoint methods are not available in this port.**
+
+# Prebuilt Models
+This library now supports prebuilt models inside the `tfdiffeq.models` namespace - specifically the Neural ODENet and Convolutional Neural ODENet. In addition, both of these models inherently support **Augmented Neural ODENets**. 
+
+They can be used a models themselves, or can be inserted inside a larger stack of ODENet layers to build a deeper ODENet or ConvODENet model, depending on the usecase.
+
+Usage : 
+```python
+import tensorflow as tf
+from tfdiffeq.models import ODENet, ConvODENet
+
+# Directly usable model
+model = ODENet(hidden_dim, output_dim, augment_dim=0, time_dependent=False)
+model = ConvODENet(num_filters, augment_dim=0, time_dependent=False)
+
+# Used inside other models
+x = Conv2D(...)(x)
+x = Conv2D(...)(x)
+x = Flatten()(x)
+x = ODENet(...)(x)  # or dont use flatten and use ConvODENet directly
+x = ODENet(...)(x)  # or dont use flatten and use ConvODENet directly
+...
+```
 
 # Keyword Arguments
 
