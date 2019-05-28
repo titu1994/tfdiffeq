@@ -201,7 +201,7 @@ class ODEBlock(tf.keras.Model):
 
 class ODENet(tf.keras.Model):
 
-    def __init__(self, hidden_dim, output_dim=1,
+    def __init__(self, hidden_dim, output_dim,
                  augment_dim=0, time_dependent=False, non_linearity='relu',
                  tol=1e-3, adjoint=False, solver='dopri5', **kwargs):
         """
