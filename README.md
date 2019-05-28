@@ -33,7 +33,7 @@ ODE solutions, explaining various methods and demonstrates visualization functio
 
 > **NOTE**: The Notebook can also be visualized on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/ode_usage.ipynb)
 
-> **Note**: An example of Augmented Neural ODEs and Prebuilt ODENet models is available on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/augmented_ode.ipynb)
+> **NOTE**: An example of Augmented Neural ODEs and Prebuilt ODENet models is available on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/augmented_ode.ipynb)
 
 This library provides one main interface odeint which contains general-purpose algorithms for solving initial value problems (IVP), with gradients implemented for all main arguments. An initial value problem consists of an ODE and an initial value,
 
