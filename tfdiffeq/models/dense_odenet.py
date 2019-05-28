@@ -10,14 +10,14 @@ MAX_NUM_STEPS = 1000  # Maximum number of steps for ODE solver
 
 class ODEFunc(tf.keras.Model):
 
-    def __init__(self, data_dim, hidden_dim, augment_dim=0,
+    def __init__(self, hidden_dim, augment_dim=0,
                  time_dependent=False, non_linearity='relu',
                  **kwargs):
         """
         MLP modeling the derivative of ODE system.
 
         # Arguments:
-            data_dim : int
+            input_dim : int
                 Dimension of data.
             hidden_dim : int
                 Dimension of hidden layers.
@@ -31,20 +31,26 @@ class ODEFunc(tf.keras.Model):
         """
         super(ODEFunc, self).__init__(**kwargs)
         self.augment_dim = augment_dim
-        self.data_dim = data_dim
-        self.input_dim = data_dim + augment_dim
+        # self.data_dim = input_dim
+        # self.input_dim = input_dim + augment_dim
         self.hidden_dim = hidden_dim
         self.nfe = 0  # Number of function evaluations
         self.time_dependent = time_dependent
 
         self.fc1 = tf.keras.layers.Dense(hidden_dim)
         self.fc2 = tf.keras.layers.Dense(hidden_dim)
-        self.fc3 = tf.keras.layers.Dense(self.input_dim)
+
+        self.fc3 = None
 
         if non_linearity == 'relu':
             self.non_linearity = tf.keras.layers.ReLU()
         elif non_linearity == 'softplus':
             self.non_linearity = tf.keras.layers.Activation('softplus')
+
+    def build(self, input_shape):
+        if len(input_shape) > 0:
+            self.fc3 = tf.keras.layers.Dense(input_shape[-1])
+            self.built = True
 
     def call(self, t, x, training=None, **kwargs):
         """
@@ -58,6 +64,10 @@ class ODEFunc(tf.keras.Model):
         # Returns:
             Output tensor of forward pass.
         """
+
+        # build the final layer if it wasnt built yet
+        if self.fc3 is None:
+            self.fc3 = tf.keras.layers.Dense(x.shape.as_list()[-1])
 
         # Forward pass of model corresponds to one function evaluation, so
         # increment counter
@@ -109,6 +119,11 @@ class ODEBlock(tf.keras.Model):
         self.method = solver
         self.channel_axis = 1 if tf.keras.backend.image_data_format() == 'channels_first' else -1
 
+        if solver == "dopri5":
+            self.options = {'max_num_steps': MAX_NUM_STEPS}
+        else:
+            self.options = None
+
     def call(self, x, training=None, eval_times=None, **kwargs):
         """
         Solves ODE starting from x.
@@ -138,15 +153,14 @@ class ODEBlock(tf.keras.Model):
                 if self.channel_axis == 1:
                     batch_size, channels, height, width = x.shape
                     aug = tf.zeros([batch_size, self.odefunc.augment_dim,
-                                    height, width])
+                                    height, width], dtype=x.dtype)
 
                 else:
                     batch_size, height, width, channels = x.shape
 
                     aug = tf.zeros([batch_size, height, width,
-                                    self.odefunc.augment_dim])
+                                    self.odefunc.augment_dim], dtype=x.dtype)
 
-                aug = tf.cast(aug, x.dtype)
                 # Shape (batch_size, channels + augment_dim, height, width)
                 x_aug = tf.concat([x, aug], axis=self.channel_axis)
             else:
@@ -161,11 +175,11 @@ class ODEBlock(tf.keras.Model):
             # TODO: Replace with odeint_adjoint once implemented !
             out = odeint(self.odefunc, x_aug, integration_time,
                          rtol=self.tol, atol=self.tol, method=self.method,
-                         options={'max_num_steps': MAX_NUM_STEPS})
+                         options=self.options)
         else:
             out = odeint(self.odefunc, x_aug, integration_time,
                          rtol=self.tol, atol=self.tol, method=self.method,
-                         options={'max_num_steps': MAX_NUM_STEPS})
+                         options=self.options)
 
         if eval_times is None:
             return out[1]  # Return only final time
@@ -187,15 +201,13 @@ class ODEBlock(tf.keras.Model):
 
 class ODENet(tf.keras.Model):
 
-    def __init__(self, data_dim, hidden_dim, output_dim=1,
+    def __init__(self, hidden_dim, output_dim=1,
                  augment_dim=0, time_dependent=False, non_linearity='relu',
                  tol=1e-3, adjoint=False, solver='dopri5', **kwargs):
         """
         An ODEBlock followed by a Linear layer.
 
         # Arguments:
-            data_dim : int
-                Dimension of data.
             hidden_dim : int
                 Dimension of hidden layers.
             output_dim : int
@@ -220,14 +232,13 @@ class ODENet(tf.keras.Model):
         if adjoint:
             raise NotImplementedError("adjoint solver has not been implemented yet !")
 
-        self.data_dim = data_dim
         self.hidden_dim = hidden_dim
         self.augment_dim = augment_dim
         self.output_dim = output_dim
         self.time_dependent = time_dependent
         self.tol = tol
 
-        odefunc = ODEFunc(data_dim, hidden_dim, augment_dim,
+        odefunc = ODEFunc(hidden_dim, augment_dim,
                           time_dependent, non_linearity)
 
         self.odeblock = ODEBlock(odefunc, tol=tol, adjoint=adjoint, solver=solver)
@@ -235,6 +246,8 @@ class ODENet(tf.keras.Model):
 
     def call(self, x, training=None, return_features=False):
         features = self.odeblock(x, training=training)
+
+        # TODO: Remove cast when keras supports double
         pred = self.linear_layer(tf.cast(features, tf.float32))
         if return_features:
             return features, pred

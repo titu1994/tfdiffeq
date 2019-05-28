@@ -14,7 +14,7 @@ class Conv2dTime(tf.keras.Model):
     Implements time dependent 2d convolutions, by appending the time variable as
     an extra channel.
     """
-    def __init__(self, dim_in, dim_out, kernel_size=3, stride=1, padding=0, dilation=1,
+    def __init__(self, dim_out, kernel_size=3, stride=1, padding=0, dilation=1,
                  bias=True, transpose=False):
         super(Conv2dTime, self).__init__()
         module = tf.keras.layers.Conv2DTranspose if transpose else tf.keras.layers.Conv2D
@@ -29,7 +29,9 @@ class Conv2dTime(tf.keras.Model):
         self.channel_axis = 1 if tf.keras.backend.image_data_format() == 'channels_first' else -1
 
     def call(self, t, x, training=None, **kwargs):
-        # t = tf.cast(t, tf.float32)
+        # TODO: Remove cast when Keras supports double
+        t = tf.cast(t, x.dtype)
+
         if self.channel_axis == 1:
             # Shape (batch_size, 1, height, width)
             tt = tf.ones_like(x[:, :1, :, :], dtype=t.dtype) * t  # channel dim = 1
@@ -40,19 +42,20 @@ class Conv2dTime(tf.keras.Model):
 
         ttx = tf.concat([tt, x], axis=self.channel_axis)  # concat at channel dim
 
+        # TODO: Remove cast when Keras supports double
+        ttx = tf.cast(ttx, tf.float32)
+
         return self._layer(ttx)
 
 
 class ConvODEFunc(tf.keras.Model):
 
-    def __init__(self, img_size, num_filters, augment_dim=0,
+    def __init__(self, num_filters, augment_dim=0,
                  time_dependent=False, non_linearity='relu', **kwargs):
         """
         Convolutional block modeling the derivative of ODE system.
 
         # Arguments:
-            img_size : tuple of ints
-                Tuple of (channels, height, width).
             num_filters : int
                 Number of convolutional filters.
             augment_dim: int
@@ -64,35 +67,43 @@ class ConvODEFunc(tf.keras.Model):
         """
         super(ConvODEFunc, self).__init__(**kwargs)
         self.augment_dim = augment_dim
-        self.img_size = img_size
         self.time_dependent = time_dependent
         self.nfe = 0  # Number of function evaluations
-        self.channels, self.height, self.width = img_size
-        self.channels += augment_dim
+        # self.channels += augment_dim
         self.num_filters = num_filters
 
         if time_dependent:
-            self.conv1 = Conv2dTime(self.channels, self.num_filters,
+            self.conv1 = Conv2dTime(self.num_filters,
                                     kernel_size=1, stride=1, padding=0)
-            self.conv2 = Conv2dTime(self.num_filters, self.num_filters,
+            self.conv2 = Conv2dTime(self.num_filters,
                                     kernel_size=3, stride=1, padding=1)
-            self.conv3 = Conv2dTime(self.num_filters, self.channels,
-                                    kernel_size=1, stride=1, padding=0)
+            self.conv3 = None
+
         else:
-            self.conv1 = tf.keras.layers.Conv2D(self.channels, self.num_filters,
+            self.conv1 = tf.keras.layers.Conv2D(self.num_filters,
                                                 kernel_size=(1, 1), strides=(1, 1),
                                                 padding='valid')
-            self.conv2 = tf.keras.layers.Conv2D(self.num_filters, self.num_filters,
+            self.conv2 = tf.keras.layers.Conv2D(self.num_filters,
                                                 kernel_size=(3, 3), strides=(1, 1),
                                                 padding='same')
-            self.conv3 = tf.keras.layers.Conv2D(self.num_filters, self.channels,
-                                                kernel_size=(1, 1), strides=(1, 1),
-                                                padding='valid')
+            self.conv3 = None
 
         if non_linearity == 'relu':
             self.non_linearity = tf.keras.layers.ReLU()
         elif non_linearity == 'softplus':
             self.non_linearity = tf.keras.layers.Activation('softplus')
+
+    def build(self, input_shape):
+        if len(input_shape) > 0:
+            if self.time_dependent:
+                self.conv3 = Conv2dTime(self.channels,
+                                        kernel_size=1, stride=1, padding=0)
+            else:
+                self.conv3 = tf.keras.layers.Conv2D(self.channels,
+                                                    kernel_size=(1, 1), strides=(1, 1),
+                                                    padding='valid')
+
+            self.built = True
 
     def call(self, t, x, training=None, **kwargs):
         """
@@ -103,6 +114,19 @@ class ConvODEFunc(tf.keras.Model):
         x : Tensor
             Shape (batch_size, input_dim)
         """
+        # build the final layer if it wasnt built yet
+        if self.conv3 is None:
+            channel_dim = 1 if tf.keras.backend.image_data_format() == 'channel_first' else -1
+            self.channels = x.shape.as_list()[channel_dim]
+
+            if self.time_dependent:
+                self.conv3 = Conv2dTime(self.channels,
+                                        kernel_size=1, stride=1, padding=0)
+            else:
+                self.conv3 = tf.keras.layers.Conv2D(self.channels,
+                                                    kernel_size=(1, 1), strides=(1, 1),
+                                                    padding='valid')
+
         self.nfe += 1
 
         if self.time_dependent:
@@ -146,20 +170,20 @@ class ConvODENet(tf.keras.Model):
         backpropagates directly through operations of ODE solver.
     solver: ODE solver. Defaults to DOPRI5.
     """
-    def __init__(self, img_size, num_filters, output_dim=1,
+    def __init__(self, num_filters, output_dim=1,
                  augment_dim=0, time_dependent=False, non_linearity='relu',
                  tol=1e-3, adjoint=False, solver='dopri5', **kwargs):
+
         super(ConvODENet, self).__init__(**kwargs)
-        self.img_size = img_size
         self.num_filters = num_filters
         self.augment_dim = augment_dim
         self.output_dim = output_dim
-        self.flattened_dim = (img_size[0] + augment_dim) * img_size[1] * img_size[2]
+        # self.flattened_dim = (img_size[0] + augment_dim) * img_size[1] * img_size[2]
         self.time_dependent = time_dependent
         self.tol = tol
         self.solver = solver
 
-        odefunc = ConvODEFunc(img_size, num_filters, augment_dim,
+        odefunc = ConvODEFunc(num_filters, augment_dim,
                               time_dependent, non_linearity)
 
         self.odeblock = ODEBlock(odefunc, is_conv=True, tol=tol,
@@ -169,8 +193,9 @@ class ConvODENet(tf.keras.Model):
 
     def call(self, x, training=None, return_features=False):
         features = self.odeblock(x, training=training)
-        features = tf.reshape([features.shape[0], -1])
+        features = tf.reshape(features, [features.shape[0], -1])
 
+        # TODO: Remove cast when Keras supports double
         pred = self.linear_layer(tf.cast(features, tf.float32))
 
         if return_features:
