@@ -46,6 +46,8 @@ class ODEFunc(tf.keras.Model):
             self.non_linearity = tf.keras.layers.ReLU()
         elif non_linearity == 'softplus':
             self.non_linearity = tf.keras.layers.Activation('softplus')
+        else:
+            self.non_linearity = tf.keras.layers.Activation(non_linearity)
 
     def build(self, input_shape):
         if len(input_shape) > 0:
