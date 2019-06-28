@@ -29,7 +29,8 @@ class ODEFunc(tf.keras.Model):
             non_linearity : string
                 One of 'relu' and 'softplus'
         """
-        super(ODEFunc, self).__init__(**kwargs)
+        dynamic = kwargs.pop('dynamic', True)
+        super(ODEFunc, self).__init__(**kwargs, dynamic=dynamic)
         self.augment_dim = augment_dim
         # self.data_dim = input_dim
         # self.input_dim = input_dim + augment_dim
@@ -109,7 +110,8 @@ class ODEBlock(tf.keras.Model):
                 backpropagates directly through operations of ODE solver.
             solver: ODE solver. Defaults to DOPRI5.
         """
-        super(ODEBlock, self).__init__(**kwargs)
+        dynamic = kwargs.pop('dynamic', True)
+        super(ODEBlock, self).__init__(**kwargs, dynamic=dynamic)
 
         if adjoint:
             raise NotImplementedError("adjoint solver has not been implemented yet !")
@@ -229,7 +231,7 @@ class ODENet(tf.keras.Model):
                 backpropagates directly through operations of ODE solver.
             solver: ODE solver. Defaults to DOPRI5.
         """
-        dynamic = kwargs.pop('dynamic', None)
+        dynamic = kwargs.pop('dynamic', True)
         super(ODENet, self).__init__(**kwargs, dynamic=dynamic)
 
         if adjoint:

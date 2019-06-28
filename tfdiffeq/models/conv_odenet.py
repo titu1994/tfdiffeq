@@ -65,8 +65,9 @@ class ConvODEFunc(tf.keras.Model):
             non_linearity : string
                 One of 'relu' and 'softplus'
         """
-        dynamic = kwargs.pop('dynamic', None)
+        dynamic = kwargs.pop('dynamic', True)
         super(ConvODEFunc, self).__init__(**kwargs, dynamic=dynamic)
+
         self.augment_dim = augment_dim
         self.time_dependent = time_dependent
         self.nfe = 0  # Number of function evaluations
@@ -177,7 +178,9 @@ class ConvODENet(tf.keras.Model):
                  augment_dim=0, time_dependent=False, non_linearity='relu',
                  tol=1e-3, adjoint=False, solver='dopri5', **kwargs):
 
-        super(ConvODENet, self).__init__(**kwargs)
+        dynamic = kwargs.pop('dynamic', True)
+        super(ConvODENet, self).__init__(**kwargs, dynamic=dynamic)
+
         self.num_filters = num_filters
         self.augment_dim = augment_dim
         self.output_dim = output_dim
