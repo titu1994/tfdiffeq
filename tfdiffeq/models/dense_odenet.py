@@ -229,7 +229,8 @@ class ODENet(tf.keras.Model):
                 backpropagates directly through operations of ODE solver.
             solver: ODE solver. Defaults to DOPRI5.
         """
-        super(ODENet, self).__init__(**kwargs)
+        dynamic = kwargs.pop('dynamic', None)
+        super(ODENet, self).__init__(**kwargs, dynamic=dynamic)
 
         if adjoint:
             raise NotImplementedError("adjoint solver has not been implemented yet !")

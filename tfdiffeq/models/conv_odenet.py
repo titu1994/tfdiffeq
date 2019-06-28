@@ -65,7 +65,8 @@ class ConvODEFunc(tf.keras.Model):
             non_linearity : string
                 One of 'relu' and 'softplus'
         """
-        super(ConvODEFunc, self).__init__(**kwargs)
+        dynamic = kwargs.pop('dynamic', None)
+        super(ConvODEFunc, self).__init__(**kwargs, dynamic=dynamic)
         self.augment_dim = augment_dim
         self.time_dependent = time_dependent
         self.nfe = 0  # Number of function evaluations
