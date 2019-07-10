@@ -18,7 +18,7 @@ def get_version(package):
 setup(
     name='tfdiffeq',
     version=get_version("tfdiffeq"),
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     url='https://github.com/titu1994/tfdiffeq',
     license='MIT',
     author='Somshubra Majumdar',
@@ -26,14 +26,14 @@ setup(
     description='Tensorflow implementation of Partial Differential Equation Solvers with full GPU support',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    install_requires=['numpy>=1.15.2',
+    install_requires=['numpy>=1.16.2',
                       'scipy>=1.1.0',
                       'matplotlib>=3.0.0; python_version > "3.0"',
                       'six>=1.11.0'],
     extras_require={
         'tests': ['six>=1.11.0'],
-        'tf': ['tensorflow>=1.13.1'],
-        'tf-gpu': ['tensorflow-gpu>=1.13.1'],
+        'tf': ['tensorflow>=1.14.0'],
+        'tf-gpu': ['tensorflow-gpu>=1.14.0'],
     },
     classifiers=(
         "Programming Language :: Python :: 3.5",
