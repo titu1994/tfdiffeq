@@ -5,7 +5,7 @@ import scipy.linalg
 import tensorflow as tf
 
 if tf.version.VERSION.startswith("1."):
-    tf.enable_eager_execution()
+    tf.enable_v2_behavior()
 
 
 class ConstantODE(tf.keras.Model):

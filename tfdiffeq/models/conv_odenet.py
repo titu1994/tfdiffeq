@@ -28,6 +28,7 @@ class Conv2dTime(tf.keras.Model):
 
         self.channel_axis = 1 if tf.keras.backend.image_data_format() == 'channels_first' else -1
 
+    @tf.function
     def call(self, t, x, training=None, **kwargs):
         # TODO: Remove cast when Keras supports double
         t = tf.cast(t, x.dtype)
@@ -48,7 +49,7 @@ class Conv2dTime(tf.keras.Model):
         return self._layer(ttx)
 
 
-class ConvODEFunc(tf.keras.Model):
+class Conv2dODEFunc(tf.keras.Model):
 
     def __init__(self, num_filters, augment_dim=0,
                  time_dependent=False, non_linearity='relu', **kwargs):
@@ -66,7 +67,7 @@ class ConvODEFunc(tf.keras.Model):
                 One of 'relu' and 'softplus'
         """
         dynamic = kwargs.pop('dynamic', True)
-        super(ConvODEFunc, self).__init__(**kwargs, dynamic=dynamic)
+        super(Conv2dODEFunc, self).__init__(**kwargs, dynamic=dynamic)
 
         self.augment_dim = augment_dim
         self.time_dependent = time_dependent
@@ -109,6 +110,7 @@ class ConvODEFunc(tf.keras.Model):
 
             self.built = True
 
+    @tf.function
     def call(self, t, x, training=None, **kwargs):
         """
         Parameters
@@ -140,6 +142,8 @@ class ConvODEFunc(tf.keras.Model):
             out = self.non_linearity(out)
             out = self.conv3(t, out)
         else:
+            # TODO: Remove cast to tf.float32 once Keras supports tf.float64
+            x = tf.cast(x, tf.float32)
             out = self.conv1(x)
             out = self.non_linearity(out)
             out = self.conv2(out)
@@ -149,7 +153,7 @@ class ConvODEFunc(tf.keras.Model):
         return out
 
 
-class ConvODENet(tf.keras.Model):
+class Conv2dODENet(tf.keras.Model):
     """Creates an ODEBlock with a convolutional ODEFunc followed by a Linear
     layer.
     Parameters
@@ -172,38 +176,47 @@ class ConvODENet(tf.keras.Model):
     adjoint : bool
         If True calculates gradient with adjoint method, otherwise
         backpropagates directly through operations of ODE solver.
+    return_sequences : bool
+        Whether to return the Convolution outputs, or the features after an
+        affine transform.
     solver: ODE solver. Defaults to DOPRI5.
     """
     def __init__(self, num_filters, output_dim=1,
-                 augment_dim=0, time_dependent=False, non_linearity='relu',
+                 augment_dim=0, time_dependent=False, out_kernel_size=(1, 1),
+                 non_linearity='relu', out_strides=(1, 1),
                  tol=1e-3, adjoint=False, solver='dopri5', **kwargs):
 
         dynamic = kwargs.pop('dynamic', True)
-        super(ConvODENet, self).__init__(**kwargs, dynamic=dynamic)
+        super(Conv2dODENet, self).__init__(**kwargs, dynamic=dynamic)
 
         self.num_filters = num_filters
         self.augment_dim = augment_dim
         self.output_dim = output_dim
-        # self.flattened_dim = (img_size[0] + augment_dim) * img_size[1] * img_size[2]
         self.time_dependent = time_dependent
         self.tol = tol
         self.solver = solver
+        self.output_kernel = out_kernel_size
+        self.output_strides = out_strides
 
-        odefunc = ConvODEFunc(num_filters, augment_dim,
-                              time_dependent, non_linearity)
+        odefunc = Conv2dODEFunc(num_filters, augment_dim,
+                                time_dependent, non_linearity)
 
         self.odeblock = ODEBlock(odefunc, is_conv=True, tol=tol,
                                  adjoint=adjoint, solver=solver)
 
-        self.linear_layer = tf.keras.layers.Dense(self.output_dim)
+        self.output_layer = tf.keras.layers.Conv2D(self.output_dim,
+                                                   kernel_size=out_kernel_size,
+                                                   strides=out_strides,
+                                                   activation=non_linearity,
+                                                   padding='same')
 
     def call(self, x, training=None, return_features=False):
         features = self.odeblock(x, training=training)
-        features = tf.reshape(features, [features.shape[0], -1])
 
         # TODO: Remove cast when Keras supports double
-        pred = self.linear_layer(tf.cast(features, tf.float32))
+        pred = self.output_layer(tf.cast(features, tf.float32))
 
         if return_features:
             return features, pred
-        return pred
+        else:
+            return pred

@@ -8,7 +8,7 @@ from tests.problems import construct_problem
 from tests.check_grad import gradcheck
 
 if not tf.executing_eagerly():
-    tf.enable_eager_execution()
+    tf.enable_v2_behavior()
 
 eps = 1e-5
 

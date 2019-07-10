@@ -55,6 +55,7 @@ class ODEFunc(tf.keras.Model):
             self.fc3 = tf.keras.layers.Dense(input_shape[-1])
             self.built = True
 
+    @tf.function
     def call(self, t, x, training=None, **kwargs):
         """
         Forward pass. If time dependent, concatenates the time
@@ -99,7 +100,7 @@ class ODEBlock(tf.keras.Model):
         Solves ODE defined by odefunc.
 
         # Arguments:
-            odefunc : ODEFunc instance or ConvODEFunc instance
+            odefunc : ODEFunc instance or Conv2dODEFunc instance
                 Function defining dynamics of system.
             is_conv : bool
                 If True, treats odefunc as a convolutional model.
@@ -249,6 +250,7 @@ class ODENet(tf.keras.Model):
         self.odeblock = ODEBlock(odefunc, tol=tol, adjoint=adjoint, solver=solver)
         self.linear_layer = tf.keras.layers.Dense(self.output_dim)
 
+    # @tf.function
     def call(self, x, training=None, return_features=False):
         features = self.odeblock(x, training=training)
 

@@ -17,7 +17,7 @@ matrix:
 install:
   - pip install -e .[tests]
   - if [[ "$API_LEVEL" == "TF2" ]]; then
-    pip install tf-nightly-2.0-preview;
+    pip install tensorflow==2.0.0-beta1;
     else
     pip install tensorflow;
     fi

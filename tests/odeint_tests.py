@@ -6,7 +6,7 @@ import tfdiffeq
 from tests import problems
 
 if not tf.executing_eagerly():
-    tf.enable_eager_execution()
+    tf.enable_v2_behavior()
 
 error_tol = 1e-4
 
