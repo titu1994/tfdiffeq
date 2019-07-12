@@ -6,7 +6,7 @@ import tfdiffeq
 import tfdiffeq.models as models
 
 if not tf.executing_eagerly():
-    tf.enable_v2_behaviour()
+    tf.enable_v2_behavior()
 
 
 class TestModel(unittest.TestCase):
