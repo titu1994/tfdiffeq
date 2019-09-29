@@ -207,7 +207,6 @@ class Conv2dODENet(tf.keras.Model):
         self.output_layer = tf.keras.layers.Conv2D(self.output_dim,
                                                    kernel_size=out_kernel_size,
                                                    strides=out_strides,
-                                                   activation=non_linearity,
                                                    padding='same')
 
     def call(self, x, training=None, return_features=False):
