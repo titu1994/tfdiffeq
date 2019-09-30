@@ -7,6 +7,8 @@ import tensorflow as tf
 if tf.version.VERSION.startswith("1."):
     tf.enable_v2_behavior()
 
+tf.keras.backend.set_floatx('float64')
+
 
 class ConstantODE(tf.keras.Model):
 
