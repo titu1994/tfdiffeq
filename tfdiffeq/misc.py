@@ -151,6 +151,7 @@ def _flatten_convert_none_to_zeros_recover(sequence, like_sequence):
 
     return out, _recover_shapes
 
+
 def _possibly_nonzero(x):
     return isinstance(x, tf.Tensor) or x != 0
 
