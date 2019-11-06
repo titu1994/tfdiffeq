@@ -94,12 +94,13 @@ class FixedGridODESolver(object):
         for t0, t1 in zip(time_grid[:-1], time_grid[1:]):
             dy = self.step_func(self.func, t0, t1 - t0, y0)
             y1 = tuple(y0_ + dy_ for y0_, dy_ in zip(y0, dy))
-            y0 = y1
 
             while j < t.shape[0] and t1 >= t[j]:
                 y = self._linear_interp(t0, t1, y0, y1, t[j])
                 solution.append(y)
                 j += 1
+
+            y0 = y1
 
         return tuple(map(tf.stack, tuple(zip(*solution))))
 
