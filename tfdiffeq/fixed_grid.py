@@ -26,7 +26,7 @@ class Midpoint(FixedGridODESolver):
         return 2
 
 
-class Huen(FixedGridODESolver):
+class Heun(FixedGridODESolver):
 
     @func_cast_double
     def step_func(self, func, t, dt, y):
