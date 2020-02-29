@@ -71,8 +71,9 @@ def OdeintAdjointMethod(*args):
                 func_eval = func(t, y)
                 func_eval = cast_double(func_eval)
 
-            gradys = tf.expand_dims(list(-adj_y_ for adj_y_ in adj_y), axis=0)
-            #gradys = tf.reshape(list(-adj_y_ for adj_y_ in adj_y), (1, -1))
+            gradys = tf.stack(list(-adj_y_ for adj_y_ in adj_y))
+            if len(gradys.shape) < len(func_eval.shape):
+                gradys = tf.expand_dims(gradys, axis=0)
             vjp_t, *vjp_y_and_params = tape.gradient(
                 func_eval,
                 (t,) + y + f_params,
