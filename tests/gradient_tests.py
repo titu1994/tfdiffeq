@@ -52,8 +52,10 @@ class TestGradient(unittest.TestCase):
         """
         Test against dopri5
         """
-        tf.random.set_seed(0)
+        tf.compat.v1.set_random_seed(0)
         f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
+        y0 = tf.cast(y0, tf.float64)
+        t_points = tf.cast(t_points, tf.float64)
     
         func = lambda y0, t_points: tfdiffeq.odeint(f, y0, t_points, method='dopri5')
     
@@ -64,6 +66,8 @@ class TestGradient(unittest.TestCase):
         reg_t_grad, reg_a_grad, reg_b_grad = tape.gradient(ys, [t_points, f.a, f.b])
     
         f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
+        y0 = tf.cast(y0, tf.float64)
+        t_points = tf.cast(t_points, tf.float64)
     
         y0 = (y0,)
     
@@ -76,9 +80,9 @@ class TestGradient(unittest.TestCase):
         grads = tape.gradient(ys, [t_points, f.a, f.b])
         adj_t_grad, adj_a_grad, adj_b_grad = grads
     
-        self.assertLess(max_abs(tf.cast(reg_t_grad, dtype=tf.float32) - tf.cast(adj_t_grad, dtype=tf.float32)), 1e-7)
-        self.assertLess(max_abs(tf.cast(reg_a_grad, dtype=tf.float32) - tf.cast(adj_a_grad, dtype=tf.float32)), 1e-7)
-        self.assertLess(max_abs(tf.cast(reg_b_grad, dtype=tf.float32) - tf.cast(adj_b_grad, dtype=tf.float32)), 1e-7)
+        self.assertLess(max_abs(reg_t_grad - adj_t_grad), 1.2e-7)
+        self.assertLess(max_abs(reg_a_grad - adj_a_grad), 1.2e-7)
+        self.assertLess(max_abs(reg_b_grad - adj_b_grad), 1.2e-7)
 
 
 class TestCompareAdjointGradient(unittest.TestCase):
@@ -109,7 +113,7 @@ class TestCompareAdjointGradient(unittest.TestCase):
 
     def test_dopri5_adjoint_against_dopri5(self):
         tf.keras.backend.set_floatx('float64')
-        tf.random.set_seed(0)
+        tf.compat.v1.set_random_seed(0)
         with tf.GradientTape(persistent=True) as tape:
             func, y0, t_points = self.problem()
             tape.watch(t_points)
@@ -145,7 +149,7 @@ class TestCompareAdjointGradient(unittest.TestCase):
 
     #def test_adams_adjoint_against_dopri5(self):
     #    tf.keras.backend.set_floatx('float64')
-    #    tf.random.set_seed(0)
+    #    tf.compat.v1.set_random_seed(0)
     #    with tf.GradientTape(persistent=True) as tape:
     #        func, y0, t_points = self.problem()
     #        tape.watch(t_points)
