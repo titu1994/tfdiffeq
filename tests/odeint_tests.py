@@ -79,13 +79,16 @@ class TestSolverError(unittest.TestCase):
             with self.subTest(ode=ode):
                 self.assertLess(rel_error(sol, y), error_tol)
 
-    # def test_adjoint(self):
-    #     for ode in problems.PROBLEMS.keys():
-    #         f, y0, t_points, sol = problems.construct_problem(TEST_DEVICE, reverse=True)
-    #
-    #         y = tfdiffeq.odeint_adjoint(f, y0, t_points, method='dopri5')
-    #         with self.subTest(ode=ode):
-    #             self.assertLess(rel_error(sol, y), error_tol)
+    def test_adjoint(self):
+        for ode in problems.PROBLEMS.keys():
+            f, y0, t_points, sol = problems.construct_problem(TEST_DEVICE, reverse=True)
+            y0 = tf.cast(y0, tf.float64)
+            t_points = tf.cast(t_points, tf.float64)
+            sol = tf.cast(sol, tf.float64)
+    
+            y = tfdiffeq.odeint_adjoint(f, y0, t_points, method='dopri5')
+            with self.subTest(ode=ode):
+                self.assertLess(rel_error(sol, y), error_tol)
 
 
 class TestSolverBackwardsInTimeError(unittest.TestCase):
@@ -130,13 +133,16 @@ class TestSolverBackwardsInTimeError(unittest.TestCase):
             with self.subTest(ode=ode):
                 self.assertLess(rel_error(sol, y), error_tol)
 
-    # def test_adjoint(self):
-    #     for ode in problems.PROBLEMS.keys():
-    #         f, y0, t_points, sol = problems.construct_problem(TEST_DEVICE, reverse=True)
-    #
-    #         y = tfdiffeq.odeint_adjoint(f, y0, t_points, method='dopri5')
-    #         with self.subTest(ode=ode):
-    #             self.assertLess(rel_error(sol, y), error_tol)
+    def test_adjoint(self):
+        for ode in problems.PROBLEMS.keys():
+            f, y0, t_points, sol = problems.construct_problem(TEST_DEVICE, reverse=True)
+            y0 = tf.cast(y0, tf.float64)
+            t_points = tf.cast(t_points, tf.float64)
+            sol = tf.cast(sol, tf.float64)
+    
+            y = tfdiffeq.odeint_adjoint(f, y0, t_points, method='dopri5')
+            with self.subTest(ode=ode):
+                self.assertLess(rel_error(sol, y), error_tol)
 
 
 class TestNoIntegration(unittest.TestCase):

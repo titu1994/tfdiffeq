@@ -1,6 +1,6 @@
 # Core imports
 from tfdiffeq.odeint import odeint
-# from tfdiffeq.adjoint import odeint_adjoint
+from tfdiffeq.adjoint import odeint_adjoint
 
 # Utility functions
 from tfdiffeq.misc import cast_double, func_cast_double

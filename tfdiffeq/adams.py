@@ -31,7 +31,7 @@ def g_and_explicit_phi(prev_t, next_t, implicit_phi, k):
     dt = next_t - prev_t[0]
 
     with tf.device(prev_t[0].device):
-        g = tf.Variable(tf.zeros([k + 1]))
+        g = tf.Variable(tf.zeros([k + 1]), trainable=False)
 
     explicit_phi = collections.deque(maxlen=k)
     beta = move_to_device(tf.convert_to_tensor(1.), prev_t[0].device)
