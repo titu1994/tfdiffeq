@@ -75,7 +75,7 @@ def move_to_device(x, device):
     x_device = x.device.lower()
 
     if 'cpu' in device.lower() and 'cpu' not in x_device:
-        x = x.cpu()
+        x = tf.identity(x)
 
     elif 'gpu' in device.lower() and 'gpu' not in x_device:
         x = x.gpu(id)
