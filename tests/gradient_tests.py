@@ -25,6 +25,12 @@ class TestGradient(unittest.TestCase):
         func = lambda y0, t_points: tfdiffeq.odeint(f, y0, t_points, method='huen')
         self.assertTrue(gradcheck(func, (y0, t_points)))
 
+    def test_adaptive_heun(self):
+        f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
+
+        func = lambda y0, t_points: tfdiffeq.odeint(f, y0, t_points, method='adaptive_heun')
+        self.assertTrue(gradcheck(func, (y0, t_points)))
+
     def test_midpoint(self):
         f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
 

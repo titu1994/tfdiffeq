@@ -17,33 +17,33 @@ _TSITOURAS_TABLEAU = _ButcherTableau(
         [5.86145544294642038, -12.92096931784711, 8.159367898576159, -0.071584973281401006, -0.02826905039406838],
         [0.09646076681806523, 0.01, 0.4798896504144996, 1.379008574103742, -3.290069515436081, 2.324710524099774],
     ],
-    c_sol=[0.09646076681806523, 0.01, 0.4798896504144996, 1.379008574103742, -3.290069515436081, 2.324710524099774, 0],
+    c_sol=[0.09646076681806523, 0.01, 0.4798896504144996, 1.379008574103742, -3.290069515436081, 2.324710524099774, 0.],
     c_error=[
         0.09646076681806523 - 0.001780011052226,
         0.01 - 0.000816434459657,
-        0.4798896504144996 - -0.007880878010262,
+        0.4798896504144996 - (-0.007880878010262),
         1.379008574103742 - 0.144711007173263,
-        -3.290069515436081 - -0.582357165452555,
+        -3.290069515436081 - (-0.582357165452555),
         2.324710524099774 - 0.458082105929187,
-        -1 / 66,
+        -1. / 66.,
     ],
 )
 
 
 def _interp_coeff_tsit5(t0, dt, eval_t):
     t = cast_double((eval_t - t0) / dt)
-    b1 = -1.0530884977290216 * t * (t - 1.3299890189751412) * (t ** 2 - 1.4364028541716351 * t + 0.7139816917074209)
-    b2 = 0.1017 * t ** 2 * (t ** 2 - 2.1966568338249754 * t + 1.2949852507374631)
-    b3 = 2.490627285651252793 * t ** 2 * (t ** 2 - 2.38535645472061657 * t + 1.57803468208092486)
-    b4 = -16.54810288924490272 * (t - 1.21712927295533244) * (t - 0.61620406037800089) * t ** 2
-    b5 = 47.37952196281928122 * (t - 1.203071208372362603) * (t - 0.658047292653547382) * t ** 2
-    b6 = -34.87065786149660974 * (t - 1.2) * (t - 0.666666666666666667) * t ** 2
-    b7 = 2.5 * (t - 1) * (t - 0.6) * t ** 2
+    b1 = -1.0530884977290216 * t * (t - 1.3299890189751412) * (t**2 - 1.4364028541716351 * t + 0.7139816917074209)
+    b2 = 0.1017 * t**2 * (t**2 - 2.1966568338249754 * t + 1.2949852507374631)
+    b3 = 2.490627285651252793 * t**2 * (t**2 - 2.38535645472061657 * t + 1.57803468208092486)
+    b4 = -16.54810288924490272 * (t - 1.21712927295533244) * (t - 0.61620406037800089) * t**2
+    b5 = 47.37952196281928122 * (t - 1.203071208372362603) * (t - 0.658047292653547382) * t**2
+    b6 = -34.87065786149660974 * (t - 1.2) * (t - 0.666666666666666667) * t**2
+    b7 = 2.5 * (t - 1) * (t - 0.6) * t**2
     return [b1, b2, b3, b4, b5, b6, b7]
 
 
 def _interp_eval_tsit5(t0, t1, k, eval_t):
-    dt = cast_double(t1 - t0)
+    dt = cast_double(t1) - cast_double(t0)
     y0 = tuple(k_[0] for k_ in k)
     interp_coeff = _interp_coeff_tsit5(t0, dt, eval_t)
     y_t = tuple(y0_ + _scaled_dot_product(dt, interp_coeff, k_) for y0_, k_ in zip(y0, k))
@@ -55,10 +55,10 @@ def _optimal_step_size(last_step, mean_error_ratio, safety=0.9, ifactor=10.0, df
     if mean_error_ratio == 0:
         return last_step * ifactor
     if mean_error_ratio < 1:
-        dfactor = _convert_to_tensor(1, dtype=tf.float64, device=mean_error_ratio.device)
+        dfactor = _convert_to_tensor(1., dtype=tf.float64, device=mean_error_ratio.device)
     error_ratio = tf.cast(mean_error_ratio, last_step.dtype)
-    exponent = tf.convert_to_tensor(1 / order, dtype=last_step.dtype)
-    factor = tf.maximum(1. / ifactor, tf.minimum((error_ratio ** exponent) / safety, 1 / dfactor))
+    exponent = tf.convert_to_tensor(1. / order, dtype=last_step.dtype)
+    factor = tf.maximum(1. / ifactor, tf.minimum((error_ratio ** exponent) / safety, 1. / dfactor))
     return last_step / factor
 
 
@@ -92,11 +92,12 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
             first_step = _convert_to_tensor(_select_initial_step(self.func, t[0], self.y0, 4, self.rtol, self.atol),
                                             device=t.device)
         else:
-            first_step = _convert_to_tensor(0.01, dtype=t.dtype, device=t.device)
+            first_step = _convert_to_tensor(self.first_step, dtype=t.dtype, device=t.device)
+
         self.rk_state = _RungeKuttaState(
             self.y0,
-            cast_double(self.func(t[0], self.y0)), t[0], t[0], first_step,
-            tuple(map(lambda x: [x] * 7, self.y0))
+            self.func(t[0], self.y0), t[0], t[0], first_step,
+            [self.y0] * 7
         )
 
     def advance(self, next_t):
@@ -105,6 +106,8 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
         while next_t > self.rk_state.t1:
             assert n_steps < self.max_num_steps, 'max_num_steps exceeded ({}>={})'.format(n_steps, self.max_num_steps)
             self.rk_state = self._adaptive_tsit5_step(self.rk_state)
+            print("next t", next_t.numpy(), "rk state t1", self.rk_state.t1.numpy())
+            print()
             n_steps += 1
         return _interp_eval_tsit5(self.rk_state.t0, self.rk_state.t1, self.rk_state.interp_coeff, next_t)
 
@@ -130,11 +133,13 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
             tf.multiply(tensor_error_ratio_, tensor_error_ratio_)
             for tensor_error_ratio_ in tensor_error_ratio
         )
+        print("sq error ratio", sq_error_ratio)
         mean_error_ratio = (
                 sum(tf.reduce_sum(sq_error_ratio_) for sq_error_ratio_ in sq_error_ratio) /
                 sum(_numel(sq_error_ratio_) for sq_error_ratio_ in sq_error_ratio)
         )
-        accept_step = mean_error_ratio <= 1
+        print("mean error ratio", mean_error_ratio)
+        accept_step = mean_error_ratio <= 1.
 
         ########################################################
         #                   Update RK State                    #
@@ -144,6 +149,8 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
         t_next = t0 + dt if accept_step else t0
         dt_next = _optimal_step_size(dt, mean_error_ratio, self.safety, self.ifactor, self.dfactor, order=self.order)
         k_next = k if accept_step else self.rk_state.interp_coeff
+
+        print("current dt", dt.numpy(), "new dt", dt_next.numpy())
         rk_state = _RungeKuttaState(y_next, f_next, t0, t_next, dt_next, k_next)
 
         return rk_state

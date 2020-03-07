@@ -81,7 +81,6 @@ def construct_problem(device, npts=10, ode='constant', reverse=False):
     def _flip(x, dim):
         # indices = [slice(None)] * len(x.shape)
         # indices[dim] = tf.range(x.shape[dim] - 1, -1, -1, dtype=tf.int64)
-
         return x[::-1]  # x[list(indices)]
 
     if reverse:

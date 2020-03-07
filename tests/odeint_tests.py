@@ -42,6 +42,17 @@ class TestSolverError(unittest.TestCase):
         y = tfdiffeq.odeint(f, y0, t_points, method='huen')
         self.assertLess(rel_error(sol, y), error_tol)
 
+    def test_adaptive_heun(self):
+        for ode in problems.PROBLEMS.keys():
+            if ode == 'sine':
+                # Sine test never finishes.
+                continue
+
+            f, y0, t_points, sol = problems.construct_problem(TEST_DEVICE, ode=ode)
+            y = tfdiffeq.odeint(f, y0, t_points, method='adaptive_heun')
+            with self.subTest(ode=ode):
+                self.assertLess(rel_error(sol, y), error_tol)
+
     def test_rk4(self):
         f, y0, t_points, sol = problems.construct_problem(TEST_DEVICE)
 

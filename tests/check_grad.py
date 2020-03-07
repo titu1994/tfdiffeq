@@ -103,7 +103,7 @@ def get_analytical_jacobian(input, output):
         reentrant = True
         correct_grad_sizes = True
 
-    for i in range(_numel(flat_grad_output)):
+    for i in range(tf.cast(_numel(flat_grad_output), tf.int64)):
         flat_grad_output *= 0.
         add_one = [0] * (flat_grad_output.shape[0])
         add_one[0] = 1
