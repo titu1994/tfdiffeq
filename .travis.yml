@@ -19,7 +19,7 @@ install:
   - if [[ "$API_LEVEL" == "TF2" ]]; then
     pip install tensorflow;
     else
-    pip install tensorflow==1.14.0;
+    pip install tensorflow==1.15.0;
     fi
 # command to run tests
 script:
