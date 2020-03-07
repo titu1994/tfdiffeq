@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-
 _VERSION = None
 
 if _VERSION is None:

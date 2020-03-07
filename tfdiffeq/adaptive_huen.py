@@ -47,8 +47,9 @@ def _ta_append(list_of_tensors, value):
 class AdaptiveHeunSolver(AdaptiveStepsizeODESolver):
 
     def __init__(
-        self, func, y0, rtol, atol, first_step=None, safety=0.9, ifactor=10.0, dfactor=0.2, max_num_steps=2**31 - 1,
-        **unused_kwargs
+            self, func, y0, rtol, atol, first_step=None, safety=0.9, ifactor=10.0, dfactor=0.2,
+            max_num_steps=2 ** 31 - 1,
+            **unused_kwargs
     ):
         _handle_unused_kwargs(self, unused_kwargs)
         del unused_kwargs

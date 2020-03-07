@@ -60,8 +60,9 @@ def _ta_append(list_of_tensors, value):
 class Dopri5Solver(AdaptiveStepsizeODESolver):
 
     def __init__(
-        self, func, y0, rtol, atol, first_step=None, safety=0.9, ifactor=10.0, dfactor=0.2, max_num_steps=2**31 - 1,
-        tableau=None, **unused_kwargs
+            self, func, y0, rtol, atol, first_step=None, safety=0.9, ifactor=10.0, dfactor=0.2,
+            max_num_steps=2 ** 31 - 1,
+            tableau=None, **unused_kwargs
     ):
         _handle_unused_kwargs(self, unused_kwargs)
         del unused_kwargs
@@ -81,7 +82,8 @@ class Dopri5Solver(AdaptiveStepsizeODESolver):
     def before_integrate(self, t):
         f0 = self.func(tf.cast(t[0], self.y0[0].dtype), self.y0)
         if self.first_step is None:
-            first_step = move_to_device(_select_initial_step(self.func, t[0], self.y0, 4, self.rtol[0], self.atol[0], f0=f0), t.device)
+            first_step = move_to_device(
+                _select_initial_step(self.func, t[0], self.y0, 4, self.rtol[0], self.atol[0], f0=f0), t.device)
         else:
             first_step = _convert_to_tensor(self.first_step, dtype=t.dtype, device=t.device)
         self.rk_state = _RungeKuttaState(self.y0, f0, t[0], t[0], first_step, interp_coeff=[self.y0] * 5)

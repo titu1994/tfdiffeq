@@ -5,7 +5,6 @@ from typing import Iterable
 import numpy as np
 import tensorflow as tf
 
-
 """
 PORTED FROM https://pytorch.org/docs/stable/_modules/torch/autograd/gradcheck.html
 """

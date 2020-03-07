@@ -3,6 +3,7 @@ import unittest
 import tensorflow as tf
 
 import tfdiffeq
+
 sys.path.insert(0, '..')
 from tests.problems import construct_problem
 from tests.check_grad import gradcheck
