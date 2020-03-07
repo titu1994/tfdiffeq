@@ -5,6 +5,7 @@ from tfdiffeq.dopri5 import Dopri5Solver
 from tfdiffeq.fixed_adams import AdamsBashforth, AdamsBashforthMoulton
 from tfdiffeq.fixed_grid import Euler, Midpoint, RK4, Heun
 from tfdiffeq.adaptive_huen import AdaptiveHeunSolver
+from tfdiffeq.bosh3 import Bosh3Solver
 from tfdiffeq.misc import _check_inputs
 from tfdiffeq.tsit5 import Tsit5Solver
 
@@ -20,6 +21,7 @@ SOLVERS = {
     'huen': Heun,  # Alias for backward compat
     'heun': Heun,
     'adaptive_heun': AdaptiveHeunSolver,
+    'bosh3': Bosh3Solver
 }
 
 
