@@ -60,7 +60,7 @@ Backpropagation through odeint goes through the internals of the solver, but thi
 
 ## Example of an ODE Model
 
-```
+```python
 import tensorflow as tf
 
 class LotkaVolterra(tf.keras.Model):
