@@ -9,6 +9,7 @@ Similar to the PyTorch codebase, this library provides ordinary differential equ
 
 Supports Augmented Neural ODE Architectures from the paper [Augmented Neural ODEs](https://arxiv.org/abs/1904.01681) as well, which has been shown to solve certain problems that Neural ODEs may struggle with.
 
+Support for Universal Differential Equations (for ODE case) from the paper [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385). While slow, and restricted to ODEs only, it works well enough on Lotke Voltera system as described in example notebook.
 
 As the solvers are implemented in Tensorflow, algorithms in this repository fully support running on the GPU, and are differentiable. Also supports prebuilt ODENet and ConvODENet tf.keras Models that can be used as is or embedded in a larger architecture. 
 
@@ -34,6 +35,8 @@ ODE solutions, explaining various methods and demonstrates visualization functio
 > **NOTE**: The Notebook can also be visualized on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/ode_usage.ipynb)
 
 > **NOTE**: An example of Augmented Neural ODEs and Prebuilt ODENet models is available on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/augmented_ode.ipynb)
+
+> **NOTE**: An example of Universal Differential Equations is available on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/UniversalNeuralODE.ipynb)
 
 This library provides one main interface odeint which contains general-purpose algorithms for solving initial value problems (IVP), with gradients implemented for all main arguments. An initial value problem consists of an ODE and an initial value,
 
@@ -111,6 +114,8 @@ Since tensorflow doesn't yet support global setting of default datatype, the `tf
 - `cast_double` : Casts either a single `tf.Tensor` or a list of tensors to the `tf.float64` datatype.
 
 - `func_cast_double` : A wrapper that casts all input arguments of the wrapped function to `tf.float64` dtype. Only affects arguments that are of type `tf.Tensor` or are a list of `tf.Tensor`.
+
+- Dont forget to add a `@tf.function` on your `call(self, t, u)` methods defined in Keras Models for some significant speed up in some cases !
 
 # Examples
 
