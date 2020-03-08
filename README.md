@@ -11,32 +11,32 @@ Supports Augmented Neural ODE Architectures from the paper [Augmented Neural ODE
 
 Support for Universal Differential Equations (for ODE case) from the paper [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385). While slow, and restricted to ODEs only, it works well enough on Lotke Voltera system as described in example notebook.
 
+Now supports Adjoint methods for Dopri5 solver due to [PR #3](https://github.com/titu1994/tfdiffeq/pull/3) from [@eozd](https://github.com/eozd).
+
 As the solvers are implemented in Tensorflow, algorithms in this repository fully support running on the GPU, and are differentiable. Also supports prebuilt ODENet and ConvODENet tf.keras Models that can be used as is or embedded in a larger architecture. 
 
 ## Caveats
 
 There are a few major limitations with this project : 
 
-- Adjoint methods are not available. As Tensorflow Eager doesn't yet support custom gradient backpropogation on the level required by the Adjoint method, though the codebase is almost ported already, the `tf.custom_gradient` callback is not flexible enough to use for this purpose yet.
-  - The code for adjoint methods has already been ported inside `adjoint.py`. However, it cannot be accessed as Tensorflow cannot handle custom gradients with variables created inside it (and greater number of gradients than original number of inputs).
-
 - Speed is almost the same as the PyTorch codebase (+- 2%), *if the solver is wrapped inside a `tf.device` block*. Runge-Kutta solvers require double dtype precision for correct gradient computations. Yet, Tensorflow does not provide a convenient global switch to force all created tensors to double dtype. So explicit casts are unavoidable.
   - Make sure to wrap the entire script in a `with tf.device('/gpu:0')` to make full utilization of the GPU. Or select the main components - the model, the optimizer, the dataset and the `odeint` call inside tf.device blocks locally.
   - Convenience methods `move_to_device`, `cast_double` and the wrapper `func_cast_double` are made available from the library to make things easier on this front.
   - If type errors are thrown, use `tfdiffeq.cast_double(...)` to correct them.
 
+# Notebooks to get started
+
+> 1) There exists a Jupyter Notebook in the examples folder, `ode_usage.ipynb` which has examples of several
+ODE solutions, explaining various methods and demonstrates visualization functions available in this library. The Notebook can also be visualized on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/ode_usage.ipynb)
+
+> 2) An example of **Augmented Neural ODEs** and Prebuilt ODENet models is available on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/augmented_ode.ipynb)
+
+> 3) An example of **Universal Differential Equations** for the Lotka-Volterra system is available on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/UniversalNeuralODE.ipynb)
+
+
 # Basic Usage
 
 Note: This is taken directly from the original PyTorch codebase. Almost all concepts apply here as well.
-
-> **NOTE**: There exists a Jupyter Notebook in the examples folder, `ode_usage.ipynb` which has examples of several
-ODE solutions, explaining various methods and demonstrates visualization functions available in this library.
-
-> **NOTE**: The Notebook can also be visualized on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/ode_usage.ipynb)
-
-> **NOTE**: An example of Augmented Neural ODEs and Prebuilt ODENet models is available on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/augmented_ode.ipynb)
-
-> **NOTE**: An example of Universal Differential Equations is available on Google Colab : [Colaboratory Link](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/UniversalNeuralODE.ipynb)
 
 This library provides one main interface odeint which contains general-purpose algorithms for solving initial value problems (IVP), with gradients implemented for all main arguments. An initial value problem consists of an ODE and an initial value,
 
@@ -58,7 +58,27 @@ where `func` is any callable implementing the ordinary differential equation `f(
 
 Backpropagation through odeint goes through the internals of the solver, but this is not supported for all solvers. Instead, we encourage the use of the adjoint method explained in [Neural Ordinary Differential Equations paper](https://arxiv.org/abs/1806.07366), which will allow solving with as many steps as necessary due to O(1) memory usage.
 
-**NOTE: As of now, adjoint methods are not available in this port.**
+## Example of an ODE Model
+
+```
+import tensorflow as tf
+
+class LotkaVolterra(tf.keras.Model):
+  
+  def __init__(self, a, b, c, d,):
+    super().__init__()
+    self.a, self.b, self.c, self.d = a, b, c, d
+  
+  @tf.function
+  def call(self, t, y):
+    # y = [R, F]
+    r, f = tf.unstack(y)
+    
+    dR_dT = self.a * r - self.b * r * f
+    dF_dT = -self.c * f + self.d * r * f
+    
+    return tf.stack([dR_dT, dF_dT])
+```
 
 # Prebuilt Models
 This library now supports prebuilt models inside the `tfdiffeq.models` namespace - specifically the Neural ODENet and Convolutional Neural ODENet. In addition, both of these models inherently support **Augmented Neural ODENets**. 
@@ -101,6 +121,8 @@ x = ODENet(...)(x)  # or dont use flatten and use ConvODENet directly
  - `euler`: Euler method.
  - `midpoint`: Midpoint method.
  - `huen`: Second-order Runge-Kutta.
+ - `adaptive_heun`: Second-order Adaptive Heun method.
+ - `bosh3`: Bogacki-Shampine solver (MATLAB ode23).
  - `rk4`: Fourth-order Runge-Kutta with 3/8 rule.
  - `explicit_adams`: Explicit Adams.
  - `fixed_adams`: Implicit Adams
@@ -115,7 +137,7 @@ Since tensorflow doesn't yet support global setting of default datatype, the `tf
 
 - `func_cast_double` : A wrapper that casts all input arguments of the wrapped function to `tf.float64` dtype. Only affects arguments that are of type `tf.Tensor` or are a list of `tf.Tensor`.
 
-- Dont forget to add a `@tf.function` on your `call(self, t, u)` methods defined in Keras Models for some significant speed up in some cases !
+- Dont forget to add a `@tf.function` on your `call(self, t, u)` methods defined in a Keras Models for some significant speed up in some cases !
 
 # Examples
 
@@ -154,8 +176,17 @@ optimized routines. This should take roughly 1 minute on a modern machine.
  it diverges in the first epoch.
 
  Reference :
- - [ANODE: Unconditionally Accurate Memory-Efficient Gradients for Neural ODEs](https://arxiv.org/abs/1902.10298)
+[ANODE: Unconditionally Accurate Memory-Efficient Gradients for Neural ODEs](https://arxiv.org/abs/1902.10298)
+
  
+![Universal ODE](https://github.com/titu1994/tfdiffeq/blob/master/images/universal_ode.png?raw=true)
+ 
+- `Universal Differential Equations`
+
+Following the methodology in the paper [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385), we reproduce (sub-optimally) the Lotke-Volterra experiment in the following notebook - [UniversalNeuralODE.ipynb](https://github.com/titu1994/tfdiffeq/blob/master/examples/UniversalNeuralODE.ipynb)
+ 
+References : [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385)
+
 # Reference
 If you found this library useful in your research, please consider citing
 
@@ -178,10 +209,11 @@ pip install .[tf-gpu]  # for gpu
 pip install .[tests]  # for cpu testing
 ```
  
- - Tensorflow 1.12.0 or above / TF 2. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
+ - Tensorflow TF 2 / 1.15.0 or above. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
  - matplotlib
  - numpy
  - scipy (for tests)
  - six
+ - pysindy (for Universal Differential Equations support only)
  
  

@@ -91,7 +91,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-.idea/
+.idea/*
 
 # Spyder project settings
 .spyderproject
@@ -108,6 +108,7 @@ venv.bak/
 
 # Docs
 docs/sources/*
+
 
 # Example data
 examples/.data
