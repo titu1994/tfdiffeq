@@ -4,7 +4,7 @@ from pysindy.optimizers.stlsq import STLSQ
 
 class STRRidge(STLSQ):
     """
-    Sequentially thresholded least squares algorithm with Lasso regression.
+    Sequentially thresholded regression algorithm with Lasso.
 
     Attempts to minimize the objective function
     :math:`\\|y - Xw\\|^2_2 + alpha \\times \\|w\\|_1`
