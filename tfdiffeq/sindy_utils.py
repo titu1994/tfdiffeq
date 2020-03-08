@@ -2,7 +2,7 @@ from sklearn.linear_model import Lasso
 from pysindy.optimizers.stlsq import STLSQ
 
 
-class SRTRidge(STLSQ):
+class STRRidge(STLSQ):
     """
     Sequentially thresholded least squares algorithm with Lasso regression.
 
