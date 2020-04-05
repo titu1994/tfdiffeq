@@ -31,9 +31,8 @@ setup(
                       'matplotlib>=3.0.0; python_version > "3.0"',
                       'six>=1.11.0'],
     extras_require={
+        'uode': ['pysindy', 'tensorflow_probability'],
         'tests': ['six>=1.11.0'],
-        'tf': ['tensorflow>=1.14.0'],
-        'tf-gpu': ['tensorflow-gpu>=1.14.0'],
     },
     classifiers=(
         "Programming Language :: Python :: 3.5",
