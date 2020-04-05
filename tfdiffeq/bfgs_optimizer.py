@@ -7,7 +7,7 @@ import tensorflow_probability as tfp
 # Ported from https://pychao.com/2019/11/02/optimize-tensorflow-keras-models-with-l-bfgs-from-tensorflow-probability/
 class AbstractTFPOptimizer(ABC):
 
-    def __init__(self, trace_function=True):
+    def __init__(self, trace_function=False):
         super(AbstractTFPOptimizer, self).__init__()
         self.trace_function = trace_function
 
@@ -102,15 +102,22 @@ class AbstractTFPOptimizer(ABC):
 
 class BFGSOptimizer(AbstractTFPOptimizer):
 
-    def __init__(self, trace_function=True, max_iterations=50, bfgs_kwargs=None):
+    def __init__(self, max_iterations=50, tolerance=1e-8, bfgs_kwargs=None, trace_function=False):
         super(BFGSOptimizer, self).__init__(trace_function=trace_function)
 
         self.max_iterations = max_iterations
+        self.tolerance = tolerance
 
         bfgs_kwargs = bfgs_kwargs or {}
 
         if 'max_iterations' in bfgs_kwargs.keys():
             del bfgs_kwargs['max_iterations']
+
+        if 'tolerance' in bfgs_kwargs.keys():
+            keys = [key for key in bfgs_kwargs.keys()
+                    if 'tolerance' in key]
+            for key in keys:
+                del bfgs_kwargs[key]
 
         self.bfgs_kwargs = bfgs_kwargs
 
@@ -120,13 +127,62 @@ class BFGSOptimizer(AbstractTFPOptimizer):
         # convert initial model parameters to a 1D tf.Tensor
         init_params = tf.dynamic_stitch(optim_func.idx, model.trainable_variables)
 
-        # train the model with L-BFGS solver
+        # train the model with BFGS solver
         results = tfp.optimizer.bfgs_minimize(
             value_and_gradients_function=optim_func, initial_position=init_params,
-            max_iterations=self.max_iterations, **self.bfgs_kwargs)
+            max_iterations=self.max_iterations,
+            tolerance=self.tolerance,
+            x_tolerance=self.tolerance,
+            f_relative_tolerance=self.tolerance,
+            **self.bfgs_kwargs)
 
         # after training, the final optimized parameters are still in results.position
         # so we have to manually put them back to the model
         optim_func.assign_new_model_parameters(results.position)
 
+        print("BFGS complete, and parameters updated !")
+        return model
+
+
+class LBFGSOptimizer(AbstractTFPOptimizer):
+
+    def __init__(self, max_iterations=50, tolerance=1e-8, lbfgs_kwargs=None, trace_function=False):
+        super(LBFGSOptimizer, self).__init__(trace_function=trace_function)
+
+        self.max_iterations = max_iterations
+        self.tolerance = tolerance
+
+        lbfgs_kwargs = lbfgs_kwargs or {}
+
+        if 'max_iterations' in lbfgs_kwargs.keys():
+            del lbfgs_kwargs['max_iterations']
+
+        if 'tolerance' in lbfgs_kwargs.keys():
+            keys = [key for key in lbfgs_kwargs.keys()
+                    if 'tolerance' in key]
+            for key in keys:
+                del lbfgs_kwargs[key]
+
+        self.lbfgs_kwargs = lbfgs_kwargs
+
+    def minimize(self, loss_func, model):
+        optim_func = self._function_wrapper(loss_func, model)
+
+        # convert initial model parameters to a 1D tf.Tensor
+        init_params = tf.dynamic_stitch(optim_func.idx, model.trainable_variables)
+
+        # train the model with L-BFGS solver
+        results = tfp.optimizer.lbfgs_minimize(
+            value_and_gradients_function=optim_func, initial_position=init_params,
+            max_iterations=self.max_iterations,
+            tolerance=self.tolerance,
+            x_tolerance=self.tolerance,
+            f_relative_tolerance=self.tolerance,
+            **self.lbfgs_kwargs)
+
+        # after training, the final optimized parameters are still in results.position
+        # so we have to manually put them back to the model
+        optim_func.assign_new_model_parameters(results.position)
+
+        print("L-BFGS complete, and parameters updated !")
         return model
