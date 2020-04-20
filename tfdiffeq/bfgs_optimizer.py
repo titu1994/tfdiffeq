@@ -10,6 +10,7 @@ class AbstractTFPOptimizer(ABC):
     def __init__(self, trace_function=False):
         super(AbstractTFPOptimizer, self).__init__()
         self.trace_function = trace_function
+        self.callback_list = None
 
     def _function_wrapper(self, loss_func, model):
         """A factory to create a function required by tfp.optimizer.lbfgs_minimize.
@@ -81,6 +82,16 @@ class AbstractTFPOptimizer(ABC):
             f.iter.assign_add(1)
             tf.print("Iter:", f.iter, "loss:", loss_value)
 
+            if self.callback_list is not None:
+                info_dict = {
+                    'iter': f.iter,
+                    'loss': loss_value,
+                    'grad': grads,
+                }
+
+                for callback in self.callback_list:
+                    callback(model, info_dict=info_dict)
+
             return loss_value, grads
 
         if self.trace_function:
@@ -94,6 +105,26 @@ class AbstractTFPOptimizer(ABC):
         f.assign_new_model_parameters = assign_new_model_parameters
 
         return f
+
+    def register_callback(self, callable):
+        """
+        Accepts a callable with signature `callback(model, info_dict=None)`.
+        Callable should not return anything, it will not be dealt with.
+
+        `info_dict` will contain the following information:
+            - Optimizer iteration number (key = 'iter')
+            - Loss value (key = 'loss')
+            - Grad value (key = 'grad')
+
+        Args:
+            callable: A callable function with the signature `callable(model, info_dict=None)`.
+            See above for what info_dict can contain.
+        """
+
+        if self.callback_list is None:
+            self.callback_list = []
+
+        self.callback_list.append(callable)
 
     @abstractmethod
     def minimize(self, loss_func, model):
