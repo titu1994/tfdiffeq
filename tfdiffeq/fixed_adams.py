@@ -169,7 +169,6 @@ class AdamsBashforthMoulton(FixedGridODESolver):
             self.prev_f.appendleft(f)
             self.prev_t = t
 
-    @func_cast_double
     def step_func(self, func, t, dt, y):
         self._update_history(t, func(t, y))
         order = min(len(self.prev_f), self.max_order - 1)

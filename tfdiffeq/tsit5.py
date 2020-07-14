@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from tfdiffeq.misc import (
     _scaled_dot_product, _convert_to_tensor, _is_finite, _select_initial_step, _handle_unused_kwargs,
-    _numel, cast_double)
+    _numel, cast_double, move_to_device)
 from tfdiffeq.rk_common import _RungeKuttaState, _ButcherTableau, _runge_kutta_step
 from tfdiffeq.solvers import AdaptiveStepsizeODESolver
 
@@ -89,8 +89,8 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
 
     def before_integrate(self, t):
         if self.first_step is None:
-            first_step = _convert_to_tensor(_select_initial_step(self.func, t[0], self.y0, 4, self.rtol, self.atol),
-                                            device=t.device)
+            first_step = _select_initial_step(self.func, t[0], self.y0, 4, self.rtol, self.atol)
+            first_step = move_to_device(tf.cast(first_step, t.dtype), t.device)
         else:
             first_step = _convert_to_tensor(self.first_step, dtype=t.dtype, device=t.device)
 
@@ -106,8 +106,6 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
         while next_t > self.rk_state.t1:
             assert n_steps < self.max_num_steps, 'max_num_steps exceeded ({}>={})'.format(n_steps, self.max_num_steps)
             self.rk_state = self._adaptive_tsit5_step(self.rk_state)
-            print("next t", next_t.numpy(), "rk state t1", self.rk_state.t1.numpy())
-            print()
             n_steps += 1
         return _interp_eval_tsit5(self.rk_state.t0, self.rk_state.t1, self.rk_state.interp_coeff, next_t)
 
@@ -133,12 +131,10 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
             tf.multiply(tensor_error_ratio_, tensor_error_ratio_)
             for tensor_error_ratio_ in tensor_error_ratio
         )
-        print("sq error ratio", sq_error_ratio)
         mean_error_ratio = (
                 sum(tf.reduce_sum(sq_error_ratio_) for sq_error_ratio_ in sq_error_ratio) /
                 sum(_numel(sq_error_ratio_) for sq_error_ratio_ in sq_error_ratio)
         )
-        print("mean error ratio", mean_error_ratio)
         accept_step = mean_error_ratio <= 1.
 
         ########################################################
@@ -150,7 +146,6 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
         dt_next = _optimal_step_size(dt, mean_error_ratio, self.safety, self.ifactor, self.dfactor, order=self.order)
         k_next = k if accept_step else self.rk_state.interp_coeff
 
-        print("current dt", dt.numpy(), "new dt", dt_next.numpy())
         rk_state = _RungeKuttaState(y_next, f_next, t0, t_next, dt_next, k_next)
 
         return rk_state

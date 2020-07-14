@@ -2,8 +2,7 @@ import abc
 
 import tensorflow as tf
 
-from tfdiffeq.misc import (_assert_increasing, _handle_unused_kwargs,
-                           move_to_device, cast_double, func_cast_double)
+from tfdiffeq.misc import (_assert_increasing, _handle_unused_kwargs, move_to_device)
 
 
 class AdaptiveStepsizeODESolver(object):
@@ -27,12 +26,11 @@ class AdaptiveStepsizeODESolver(object):
 
     def integrate(self, t):
         _assert_increasing(t)
-        solution = [cast_double(self.y0)]
+        solution = [self.y0]
         t = move_to_device(tf.cast(t, tf.float64), self.y0[0].device)
         self.before_integrate(t)
         for i in range(1, t.shape[0]):
             y = self.advance(t[i])
-            y = cast_double(y)
             solution.append(y)
         return tuple(map(tf.stack, tuple(zip(*solution))))
 
@@ -88,10 +86,10 @@ class FixedGridODESolver(object):
         assert tf.equal(time_grid[0], t[0]) and tf.equal(time_grid[-1], t[-1])
         time_grid = move_to_device(time_grid, self.y0[0].device)
 
-        solution = [cast_double(self.y0)]
+        solution = [self.y0]
 
         j = 1
-        y0 = cast_double(self.y0)
+        y0 = self.y0
         for t0, t1 in zip(time_grid[:-1], time_grid[1:]):
             dy = self.step_func(self.func, t0, t1 - t0, y0)
             y1 = tuple(y0_ + dy_ for y0_, dy_ in zip(y0, dy))
@@ -105,7 +103,6 @@ class FixedGridODESolver(object):
 
         return tuple(map(tf.stack, tuple(zip(*solution))))
 
-    @func_cast_double
     def _linear_interp(self, t0, t1, y0, y1, t):
         if t == t0:
             return y0

@@ -38,23 +38,11 @@ DPS_C_MID = [
 
 def _interp_fit_dopri5(y0, y1, k, dt, tableau=_DORMAND_PRINCE_SHAMPINE_TABLEAU):
     """Fit an interpolating polynomial to the results of a Runge-Kutta step."""
-    dt = cast_double(dt)
-    y0 = cast_double(y0)
-
+    dt = tf.cast(dt, y0[0].dtype)
     y_mid = tuple(y0_ + _scaled_dot_product(dt, DPS_C_MID, k_) for y0_, k_ in zip(y0, k))
     f0 = tuple(k_[0] for k_ in k)
     f1 = tuple(k_[-1] for k_ in k)
     return _interp_fit(y0, y1, y_mid, f0, f1, dt)
-
-
-def _abs_square(x):
-    return x * x
-
-
-def _ta_append(list_of_tensors, value):
-    """Append a value to the end of a list of PyTorch tensors."""
-    list_of_tensors.append(value)
-    return list_of_tensors
 
 
 class Dopri5Solver(AdaptiveStepsizeODESolver):
@@ -82,17 +70,20 @@ class Dopri5Solver(AdaptiveStepsizeODESolver):
     def before_integrate(self, t):
         f0 = self.func(tf.cast(t[0], self.y0[0].dtype), self.y0)
         if self.first_step is None:
-            first_step = move_to_device(
-                _select_initial_step(self.func, t[0], self.y0, 4, self.rtol[0], self.atol[0], f0=f0), t.device)
+            first_step = _select_initial_step(
+                self.func, t[0], self.y0, 4, self.rtol[0], self.atol[0], f0=f0)
+            first_step = move_to_device(tf.cast(first_step, t.dtype), t.device)
         else:
             first_step = _convert_to_tensor(self.first_step, dtype=t.dtype, device=t.device)
-        self.rk_state = _RungeKuttaState(self.y0, f0, t[0], t[0], first_step, interp_coeff=[self.y0] * 5)
+        self.rk_state = _RungeKuttaState(
+            self.y0, f0, t[0], t[0], first_step, interp_coeff=[self.y0] * 5)
 
     def advance(self, next_t):
         """Interpolate through the next time point, integrating as necessary."""
         n_steps = 0
         while next_t > self.rk_state.t1:
-            assert n_steps < self.max_num_steps, 'max_num_steps exceeded ({}>={})'.format(n_steps, self.max_num_steps)
+            assert n_steps < self.max_num_steps, 'max_num_steps exceeded ({}>={})'.format(
+                n_steps, self.max_num_steps)
             self.rk_state = self._adaptive_dopri5_step(self.rk_state)
             n_steps += 1
         return _interp_evaluate(self.rk_state.interp_coeff, self.rk_state.t0, self.rk_state.t1, next_t)
@@ -112,7 +103,8 @@ class Dopri5Solver(AdaptiveStepsizeODESolver):
         ########################################################
         #                     Error Ratio                      #
         ########################################################
-        mean_sq_error_ratio = _compute_error_ratio(y1_error, atol=self.atol, rtol=self.rtol, y0=y0, y1=y1)
+        mean_sq_error_ratio = _compute_error_ratio(
+            y1_error, atol=self.atol, rtol=self.rtol, y0=y0, y1=y1)
         accept_step = tf.reduce_all(tf.convert_to_tensor(mean_sq_error_ratio) <= 1)
 
         ########################################################

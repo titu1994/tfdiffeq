@@ -137,10 +137,8 @@ class VariableCoefficientAdamsBashforth(AdaptiveStepsizeODESolver):
 
         # Explicit predictor step.
         g, phi = g_and_explicit_phi(prev_t, next_t, prev_phi, order)
-        # g = move_to_device(g, y0[0].device)
 
         g = tf.cast(g, dt_cast.dtype)
-        phi = [tf.cast(phi_, dt_cast.dtype) for phi_ in phi]
 
         p_next = tuple(
             y0_ + _scaled_dot_product(dt_cast, g[:max(1, order - 1)], phi_[:max(1, order - 1)])
@@ -177,14 +175,11 @@ class VariableCoefficientAdamsBashforth(AdaptiveStepsizeODESolver):
         next_t = move_to_device(next_t, p_next[0].device)
         next_f0 = self.func(tf.cast(next_t, self.y0[0].dtype), y_next)
         implicit_phi = compute_implicit_phi(phi, next_f0, order + 2)
-
         next_order = order
 
         if len(prev_t) <= 4 or order < 3:
             next_order = min(order + 1, 3, self.max_order)
         else:
-            implicit_phi_p = [tf.cast(iphi_, dt_cast.dtype) for iphi_ in implicit_phi_p]
-
             error_km1 = _compute_error_ratio(
                 tuple(dt_cast * (g[order - 1] - g[order - 2]) * iphi_
                       for iphi_ in implicit_phi_p[order - 1]),

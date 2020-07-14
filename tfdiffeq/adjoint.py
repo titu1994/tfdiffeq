@@ -1,14 +1,9 @@
-import numpy as np
 from typing import Iterable
 
 import tensorflow as tf
-from tensorflow.python.eager.context import eager_mode
 
 from tfdiffeq import odeint
-from tfdiffeq.misc import (_flatten, _flatten_convert_none_to_zeros,
-                           move_to_device, cast_double, func_cast_double,
-                           _check_len, _numel, _convert_to_tensor)
-
+from tfdiffeq.misc import (_flatten, move_to_device, _check_len, _numel)
 
 class _Arguments(object):
 
@@ -40,7 +35,7 @@ def OdeintAdjointMethod(*args):
 
     y0, t = args[:-1], args[-1]
 
-    # registers `t` as a Variable that needs a gred, then resets it to a Tensor
+    # registers `t` as a Variable that needs a grad, then resets it to a Tensor
     # for the `odeint` function to work. This is done to force tf to allow us to
     # pass the gradient of t as output.
     # t = tf.get_variable('t', initializer=t)
@@ -48,7 +43,6 @@ def OdeintAdjointMethod(*args):
 
     ans = odeint(func, y0, t, rtol=rtol, atol=atol, method=method, options=options)
 
-    @func_cast_double
     def grad(*grad_output, variables=None):
         global _arguments
         flat_params = _flatten(variables)
@@ -73,11 +67,9 @@ def OdeintAdjointMethod(*args):
                 tape.watch(t)
                 tape.watch(y)
                 func_eval = func(t, y)
-                func_eval = cast_double(func_eval)
+                func_eval = tf.convert_to_tensor(func_eval)
 
-            # gradys = tf.stack(list(-adj_y_ for adj_y_ in adj_y))
-            gradys = list(-adj_y_ for adj_y_ in adj_y)
-
+            gradys = -tf.stack(adj_y)
             if type(func_eval) in [list, tuple]:
                 for eval_ix in range(len(func_eval)):
                     if len(gradys[eval_ix].shape) < len(func_eval[eval_ix].shape):
@@ -87,22 +79,16 @@ def OdeintAdjointMethod(*args):
                 for grad_ix in range(len(gradys)):
                     if len(gradys[grad_ix].shape) < len(func_eval.shape):
                         gradys[grad_ix] = tf.expand_dims(gradys[grad_ix], axis=0)
-
             vjp_t, *vjp_y_and_params = tape.gradient(
                 func_eval,
                 (t,) + y + f_params,
-                output_gradients=gradys
+                output_gradients=gradys,
+                unconnected_gradients=tf.UnconnectedGradients.ZERO
             )
 
             vjp_y = vjp_y_and_params[:n_tensors]
             vjp_params = vjp_y_and_params[n_tensors:]
-
-            # autograd.grad returns None if no gradient, set to zero.
-            vjp_t = tf.zeros_like(t, dtype=t.dtype) if vjp_t is None else vjp_t
-            vjp_y = tuple(tf.zeros_like(y_, dtype=y_.dtype)
-                          if vjp_y_ is None else vjp_y_
-                          for vjp_y_, y_ in zip(vjp_y, y))
-            vjp_params = _flatten_convert_none_to_zeros(vjp_params, f_params)
+            vjp_params = _flatten(vjp_params)
 
             if _check_len(f_params) == 0:
                 vjp_params = tf.convert_to_tensor(0., dtype=vjp_y[0].dype)
@@ -111,25 +97,26 @@ def OdeintAdjointMethod(*args):
             return (*func_eval, *vjp_y, vjp_t, vjp_params)
 
         T = ans[0].shape[0]
-        if isinstance(grad_output, tf.Tensor) or isinstance(grad_output, tf.Variable):
+        if isinstance(grad_output, (tf.Tensor, tf.Variable)):
             adj_y = [grad_output[-1]]
         else:
             adj_y = tuple(grad_output_[-1] for grad_output_ in grad_output)
-        # adj_y = tuple(grad_output_[-1] for grad_output_ in grad_output)
+
         adj_params = tf.zeros_like(flat_params, dtype=flat_params.dtype)
         adj_time = move_to_device(tf.convert_to_tensor(0., dtype=t.dtype), t.device)
         time_vjps = []
+        if hasattr(func, 'base_func') and hasattr(func.base_func, 'nfe'):
+            nfe = func.base_func.nfe.numpy()
         for i in range(T - 1, 0, -1):
 
             ans_i = tuple(ans_[i] for ans_ in ans)
 
-            if isinstance(grad_output, tf.Tensor) or isinstance(grad_output, tf.Variable):
+            if isinstance(grad_output, (tf.Tensor, tf.Variable)):
                 grad_output_i = [grad_output[i]]
             else:
                 grad_output_i = tuple(grad_output_[i] for grad_output_ in grad_output)
 
             func_i = func(t[i], ans_i)
-            func_i = cast_double(func_i)
 
             if not isinstance(func_i, Iterable):
                 func_i = [func_i]
@@ -139,15 +126,13 @@ def OdeintAdjointMethod(*args):
                 tf.reshape(tf.matmul(tf.reshape(func_i_, [1, -1]), tf.reshape(grad_output_i_, [-1, 1])), [1])
                 for func_i_, grad_output_i_ in zip(func_i, grad_output_i)
             )
-            adj_time = cast_double(adj_time)
+
             adj_time = adj_time - dLd_cur_t
             time_vjps.append(dLd_cur_t)
 
             # Run the augmented system backwards in time.
             if isinstance(adj_params, Iterable):
-                count = _numel(adj_params)
-
-                if count == 0:
+                if _numel(adj_params) == 0:
                     adj_params = move_to_device(tf.convert_to_tensor(0., dtype=adj_y[0].dtype), adj_y[0].device)
 
             aug_y0 = (*ans_i, *adj_y, adj_time, adj_params)
@@ -172,6 +157,11 @@ def OdeintAdjointMethod(*args):
 
             del aug_y0, aug_ans
 
+        if hasattr(func, 'base_func') and hasattr(func.base_func, 'nfe'):
+            nbe = func.base_func.nfe.numpy()-nfe
+            func.base_func.nfe.assign(nfe)
+            func.base_func.nbe.assign(nbe)
+
         time_vjps.append(adj_time)
         time_vjps = tf.concat(time_vjps[::-1], 0)
 
@@ -182,18 +172,18 @@ def OdeintAdjointMethod(*args):
         adj_params_splits = tf.split(adj_params, var_flat_lens)
         adj_params_list = [tf.reshape(p, v_shape)
                            for p, v_shape in zip(adj_params_splits, var_shapes)]
-
         return (*adj_y, time_vjps), adj_params_list
 
     return ans, grad
 
 
-def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None, adjoint_method=None, adjoint_rtol=None,
-                   adjoint_atol=None, adjoint_options=None):
+def odeint_adjoint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None, adjoint_method=None, adjoint_rtol=None,
+                   adjoint_atol=None, adjoint_options=None:
     # We need this in order to access the variables inside this module,
     # since we have no other way of getting variables along the execution path.
     if not isinstance(func, tf.keras.Model):
         raise ValueError('func is required to be an instance of tf.keras.Model')
+    tensor_input = False
 
     if adjoint_method is None:
         adjoint_method = method
@@ -207,33 +197,29 @@ def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None
     if adjoint_options is None:
         adjoint_options = options
 
-    with eager_mode():
-        tensor_input = False
-        if tf.debugging.is_numeric_tensor(y0):
-            class TupleFunc(tf.keras.Model):
+    tensor_input = False
+    if tf.debugging.is_numeric_tensor(y0):
+        class TupleFunc(tf.keras.Model):
+            def __init__(self, base_func, **kwargs):
+                super(TupleFunc, self).__init__(dtype=base_func.dtype, **kwargs)
+                self.base_func = base_func
 
-                def __init__(self, base_func, **kwargs):
-                    super(TupleFunc, self).__init__(**kwargs)
-                    self.base_func = base_func
+            def call(self, t, y):
+                return (self.base_func(t, y[0]),)
 
-                def call(self, t, y):
-                    return (self.base_func(t, y[0]),)
+    tensor_input = True
+    y0 = (y0,)
+    func = TupleFunc(func)
 
-            tensor_input = True
-            y0 = (y0,)
-            func = TupleFunc(func)
+    # build the function to get its variables
+    if not func.built:
+        _ = func(tf.constant(0., dtype=y0[0].dtype), y0)
 
-        # build the function to get its variables
-        # if not func.built:
-        #     _ = func(t, y0)
+    global _arguments
+    _arguments = _Arguments(func, method, options, rtol, atol)
+    ys = OdeintAdjointMethod(*y0, t)
 
-        global _arguments
-        _arguments = _Arguments(func, method, options, rtol, atol,
-                                adjoint_method, adjoint_rtol, adjoint_atol, adjoint_options)
+    if tensor_input or isinstance(ys, (list, tuple)):
+        ys = ys[0]
 
-        ys = OdeintAdjointMethod(*y0, t)
-
-        if tensor_input or type(ys) == tuple or type(ys) == list:
-            ys = ys[0]
-
-        return ys
+    return ys
