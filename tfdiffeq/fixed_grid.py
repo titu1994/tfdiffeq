@@ -16,7 +16,8 @@ class Midpoint(FixedGridODESolver):
 
     def step_func(self, func, t, dt, y):
         y_mid = tuple(y_ + f_ * dt / 2 for y_, f_ in zip(y, func(t + self.eps, y)))
-        return tuple(dt * f_ for f_ in cast_double(func(t + dt / 2, y_mid)))
+        return tuple(dt * f_ for f_ in func(t + dt / 2, y_mid))
+
 
     @property
     def order(self):
