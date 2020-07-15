@@ -20,6 +20,7 @@ Modify line 1120 *tensorflow/python/keras/engine/training_utils.py*:
 
 Old:
 if is_binary_crossentropy or output_shape[-1] == 1:
+
 New:
 if is_binary_crossentropy:
 
