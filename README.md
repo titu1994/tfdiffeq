@@ -1,6 +1,26 @@
 # Tensorflow Ordinary Differential Equation Solvers
 [![Build Status](https://travis-ci.org/titu1994/tfdiffeq.svg?branch=master)](https://travis-ci.org/titu1994/tfdiffeq)
 
+This project is a fork of [tfdiffeq](https://github.com/titu1994/tfdiffeq) with various modifications.
+The changes include upgrading the codebase to be compatible with TensorFlow 2.2 and the ability to flexibly choose the desired datatype. 
+
+## Notes
+This project was tested with TensorFlow 2.2, and the following changes to the Tensorflow codebase, which may break other code:
+Modify line 419/420 in *tensorflow/python/ops/custom_gradient.py*: 
+Old:
+  if (variables and ("variables" not in grad_argspec.args) and not grad_argspec.varkw: 
+New:
+  if (variables and ("variables" not in grad_argspec.args) 
+      and ("variables" not in grad_argspec.kwonlyargs)) and not grad_argspec.varkw:
+Modify line 1120 *tensorflow/python/keras/engine/training_utils.py*:
+Old:
+if is_binary_crossentropy or output_shape[-1] == 1:
+New:
+if is_binary_crossentropy:
+
+This is necessary because the output shape of a subclassed model is undefined.
+
+## tfdiffeq README
 A library built to replicate the [TorchDiffEq](https://github.com/rtqichen/torchdiffeq) library built for the [Neural Ordinary Differential Equations paper by Chen et al](https://arxiv.org/abs/1806.07366), running entirely on Tensorflow Eager Execution.
 
 All credits for the codebase go to [@rtqichen](https://github.com/rtqichen) for providing an excellent base to reimplement from.
