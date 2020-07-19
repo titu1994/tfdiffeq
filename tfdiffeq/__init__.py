@@ -12,7 +12,7 @@ from tfdiffeq.viz_utils import (plot_phase_portrait,
                                 plot_results)
 
 
-__all__ = ['odeint',
+__all__ = ['odeint', 'odeint_adjoint',
            'cast_double', 'func_cast_double', 'move_to_device',
            'plot_phase_portrait', 'plot_vector_field', 'plot_results',
            ]
