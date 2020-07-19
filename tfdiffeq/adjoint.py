@@ -12,12 +12,16 @@ from tfdiffeq.misc import (_flatten, _flatten_convert_none_to_zeros,
 
 class _Arguments(object):
 
-    def __init__(self, func, method, options, rtol, atol):
+    def __init__(self, func, method, options, rtol, atol, adjoint_method, adjoint_rtol, adjoint_atol, adjoint_options):
         self.func = func
         self.method = method
         self.options = options
         self.rtol = rtol
         self.atol = atol
+        self.adjoint_method = adjoint_method
+        self.adjoint_rtol = rtol
+        self.adjoint_atol = atol
+        self.adjoint_options = adjoint_options
 
 
 _arguments = None
@@ -25,7 +29,7 @@ _arguments = None
 
 @tf.custom_gradient
 def OdeintAdjointMethod(*args):
-    global _arguments
+    global _arguments  # type: _Arguments
     # args = _arguments.args
     # kwargs = _arguments.kwargs
     func = _arguments.func
@@ -50,10 +54,10 @@ def OdeintAdjointMethod(*args):
         flat_params = _flatten(variables)
 
         func = _arguments.func
-        method = _arguments.method
-        options = _arguments.options
-        rtol = _arguments.rtol
-        atol = _arguments.atol
+        adjoint_method = _arguments.adjoint_method
+        adjoint_rtol = _arguments.rtol
+        adjoint_atol = _arguments.atol
+        adjoint_options = _arguments.adjoint_options
 
         n_tensors = len(ans)
         f_params = tuple(variables)
@@ -142,7 +146,7 @@ def OdeintAdjointMethod(*args):
                 augmented_dynamics,
                 aug_y0,
                 tf.convert_to_tensor([t[i], t[i - 1]]),
-                rtol=rtol, atol=atol, method=method, options=options
+                rtol=adjoint_rtol, atol=adjoint_atol, method=adjoint_method, options=adjoint_options
             )
 
             # Unpack aug_ans.
@@ -174,11 +178,24 @@ def OdeintAdjointMethod(*args):
     return ans, grad
 
 
-def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None):
+def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None, adjoint_method=None, adjoint_rtol=None,
+                   adjoint_atol=None, adjoint_options=None):
     # We need this in order to access the variables inside this module,
     # since we have no other way of getting variables along the execution path.
     if not isinstance(func, tf.keras.Model):
         raise ValueError('func is required to be an instance of tf.keras.Model')
+
+    if adjoint_method is None:
+        adjoint_method = method
+
+    if adjoint_rtol is None:
+        adjoint_rtol = rtol
+
+    if adjoint_atol is None:
+        adjoint_atol = atol
+
+    if adjoint_options is None:
+        adjoint_options = options
 
     with eager_mode():
         tensor_input = False
@@ -201,7 +218,8 @@ def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None
             _ = func(t, y0)
 
         global _arguments
-        _arguments = _Arguments(func, method, options, rtol, atol)
+        _arguments = _Arguments(func, method, options, rtol, atol,
+                                adjoint_method, adjoint_rtol, adjoint_atol, adjoint_options)
 
         ys = OdeintAdjointMethod(*y0, t)
 
