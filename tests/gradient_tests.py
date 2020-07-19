@@ -54,6 +54,12 @@ class TestGradient(unittest.TestCase):
         func = lambda y0, t_points: tfdiffeq.odeint(f, y0, t_points, method='dopri5')
         self.assertTrue(gradcheck(func, (y0, t_points)))
 
+    def test_dopri8(self):
+        f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
+
+        func = lambda y0, t_points: tfdiffeq.odeint(f, y0, t_points, method='dopri8')
+        self.assertTrue(gradcheck(func, (y0, t_points)))
+
     def test_adams(self):
         f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
 
