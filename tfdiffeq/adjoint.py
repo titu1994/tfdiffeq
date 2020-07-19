@@ -214,8 +214,8 @@ def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None
             func = TupleFunc(func)
 
         # build the function to get its variables
-        if not func.built:
-            _ = func(t, y0)
+        # if not func.built:
+        #     _ = func(t, y0)
 
         global _arguments
         _arguments = _Arguments(func, method, options, rtol, atol,
