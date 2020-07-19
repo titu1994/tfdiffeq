@@ -40,7 +40,7 @@ class AdaptiveStepsizeODESolver(object):
 class FixedGridODESolver(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, func, y0, step_size=None, grid_constructor=None, **unused_kwargs):
+    def __init__(self, func, y0, step_size=None, grid_constructor=None, eps=0.0, **unused_kwargs):
         unused_kwargs.pop('rtol', None)
         unused_kwargs.pop('atol', None)
         _handle_unused_kwargs(self, unused_kwargs)
@@ -48,6 +48,7 @@ class FixedGridODESolver(object):
 
         self.func = func
         self.y0 = y0
+        self.eps = eps
 
         if step_size is not None and grid_constructor is None:
             self.grid_constructor = self._grid_constructor_from_step_size(step_size)
