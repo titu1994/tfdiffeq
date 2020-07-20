@@ -81,7 +81,9 @@ c_mid = C_mid
 
 def _interp_fit_dopri8(y0, y1, k, dt, tableau=_DOPRI8_TABLEAU):
     """Fit an interpolating polynomial to the results of a Runge-Kutta step."""
-    dt = tf.cast(dt, y0[0].dtype)
+    dt = cast_double(dt)
+    y0 = cast_double(y0)
+
     y_mid = tuple(y0_ + _scaled_dot_product(dt, c_mid, k_) for y0_, k_ in zip(y0, k))
     f0 = tuple(k_[0] for k_ in k)
     f1 = tuple(k_[-1] for k_ in k)
