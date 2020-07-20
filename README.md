@@ -114,6 +114,7 @@ x = ODENet(...)(x)  # or dont use flatten and use ConvODENet directly
 ### Adaptive-step:
 
  - `dopri5`: Runge-Kutta 4(5) [default].
+ - `dopri8`: Runga-Kutta 8(5).
  - `adams`: Adaptive-order implicit Adams.
 
 ### Fixed-step:
@@ -187,6 +188,18 @@ Following the methodology in the paper [Universal Differential Equations for Sci
  
 References : [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385)
 
+![Universal ODE](https://github.com/titu1994/tfdiffeq/blob/master/images/universal_ode.png?raw=true)
+ 
+- `Continious Normalizing Flows`
+
+Ported Continious Normalizing Flow example from the torchdiffeq repository -  [CNF Examples](https://github.com/rtqichen/torchdiffeq/tree/master/examples).
+
+<p align="center">
+  <img src="https://github.com/titu1994/tfdiffeq/blob/master/images/cnf-viz.gif?raw=true">
+</p>
+
+References : [FFJORD: Free-Form Continuous Dynamics for Scalable Reversible Generative Models](https://openreview.net/forum?id=rJxgknCcK7)
+
 # Reference
 If you found this library useful in your research, please consider citing
 
@@ -210,6 +223,7 @@ pip install .[tests]  # for cpu testing
 ```
  
  - Tensorflow TF 2 / 1.15.0 or above. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
+ - Tensorflow Probability (for CNF example only)
  - matplotlib
  - numpy
  - scipy (for tests)
