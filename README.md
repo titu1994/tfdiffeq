@@ -188,8 +188,6 @@ Following the methodology in the paper [Universal Differential Equations for Sci
  
 References : [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385)
 
-![Universal ODE](https://github.com/titu1994/tfdiffeq/blob/master/images/universal_ode.png?raw=true)
- 
 - `Continious Normalizing Flows`
 
 Ported Continious Normalizing Flow example from the torchdiffeq repository -  [CNF Examples](https://github.com/rtqichen/torchdiffeq/tree/master/examples).
