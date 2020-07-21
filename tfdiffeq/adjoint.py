@@ -1,3 +1,4 @@
+import six
 from typing import Iterable
 
 import tensorflow as tf
@@ -17,6 +18,15 @@ class _Arguments(object):
         self.adjoint_rtol = rtol
         self.adjoint_atol = atol
         self.adjoint_options = adjoint_options
+
+
+def grad_wrapper(func):
+    """Necessary to fix tensorflow "variables in gradspec.args" error"""
+    @six.wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*new_args, **kwargs)
+        return result
+    return wrapper
 
 
 _arguments = None
@@ -43,6 +53,7 @@ def OdeintAdjointMethod(*args):
 
     ans = odeint(func, y0, t, rtol=rtol, atol=atol, method=method, options=options)
 
+    @grad_wrapper
     def grad(*grad_output, variables=None):
         global _arguments
         flat_params = _flatten(variables)
