@@ -105,8 +105,6 @@ def OdeintAdjointMethod(*args):
         adj_params = tf.zeros_like(flat_params, dtype=flat_params.dtype)
         adj_time = move_to_device(tf.convert_to_tensor(0., dtype=t.dtype), t.device)
         time_vjps = []
-        if hasattr(func, 'base_func') and hasattr(func.base_func, 'nfe'):
-            nfe = func.base_func.nfe.numpy()
         for i in range(T - 1, 0, -1):
 
             ans_i = tuple(ans_[i] for ans_ in ans)
@@ -156,11 +154,6 @@ def OdeintAdjointMethod(*args):
             adj_y = tuple(adj_y_ + grad_output_[i - 1] for adj_y_, grad_output_ in zip(adj_y, grad_output))
 
             del aug_y0, aug_ans
-
-        if hasattr(func, 'base_func') and hasattr(func.base_func, 'nfe'):
-            nbe = func.base_func.nfe.numpy()-nfe
-            func.base_func.nfe.assign(nfe)
-            func.base_func.nbe.assign(nbe)
 
         time_vjps.append(adj_time)
         time_vjps = tf.concat(time_vjps[::-1], 0)
