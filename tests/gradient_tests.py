@@ -117,7 +117,6 @@ class TestCompareAdjointGradient(unittest.TestCase):
                 self.unused_module.build((5,))
 
             def call(self, t, y):
-                y = tfdiffeq.cast_double(y)
                 return tf.linalg.matvec(self.A, y ** 3)
 
         y0 = tf.convert_to_tensor([2., 0.], dtype=tf.float64)

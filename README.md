@@ -13,17 +13,16 @@ Support for Universal Differential Equations (for ODE case) from the paper [Univ
 
 Now supports Adjoint methods for Dopri5 solver due to [PR #3](https://github.com/titu1994/tfdiffeq/pull/3) from [@eozd](https://github.com/eozd).
 
-As the solvers are implemented in Tensorflow, algorithms in this repository fully support running on the GPU, and are differentiable. Also supports prebuilt ODENet and ConvODENet tf.keras Models that can be used as is or embedded in a larger architecture. 
+As the solvers are implemented in Tensorflow, algorithms in this repository fully support running on the GPU, and are differentiable. Also supports prebuilt ODENet and ConvODENet tf.keras Models that can be used as is or embedded in a larger architecture.
 
 ## Caveats
 
-There are a few major limitations with this project : 
+There are a few major limitations with this project :
 
 - Speed is almost the same as the PyTorch codebase (+- 2%), *if the solver is wrapped inside a `tf.device` block*. Runge-Kutta solvers require double dtype precision for correct gradient computations. Yet, Tensorflow does not provide a convenient global switch to force all created tensors to double dtype. So explicit casts are unavoidable.
   - Make sure to wrap the entire script in a `with tf.device('/gpu:0')` to make full utilization of the GPU. Or select the main components - the model, the optimizer, the dataset and the `odeint` call inside tf.device blocks locally.
-  - Convenience methods `move_to_device`, `cast_double` and the wrapper `func_cast_double` are made available from the library to make things easier on this front.
-  - If type errors are thrown, use `tfdiffeq.cast_double(...)` to correct them.
-
+  - Convenience method `move_to_device` is made available from the library to make things easier on this front.
+  - If type errors are thrown, correct them with `tf.cast()`
 # Notebooks to get started
 
 > 1) There exists a Jupyter Notebook in the examples folder, `ode_usage.ipynb` which has examples of several
@@ -64,28 +63,28 @@ Backpropagation through odeint goes through the internals of the solver, but thi
 import tensorflow as tf
 
 class LotkaVolterra(tf.keras.Model):
-  
+
   def __init__(self, a, b, c, d,):
     super().__init__()
     self.a, self.b, self.c, self.d = a, b, c, d
-  
+
   @tf.function
   def call(self, t, y):
     # y = [R, F]
     r, f = tf.unstack(y)
-    
+
     dR_dT = self.a * r - self.b * r * f
     dF_dT = -self.c * f + self.d * r * f
-    
+
     return tf.stack([dR_dT, dF_dT])
 ```
 
 # Prebuilt Models
-This library now supports prebuilt models inside the `tfdiffeq.models` namespace - specifically the Neural ODENet and Convolutional Neural ODENet. In addition, both of these models inherently support **Augmented Neural ODENets**. 
+This library now supports prebuilt models inside the `tfdiffeq.models` namespace - specifically the Neural ODENet and Convolutional Neural ODENet. In addition, both of these models inherently support **Augmented Neural ODENets**.
 
 They can be used a models themselves, or can be inserted inside a larger stack of ODENet layers to build a deeper ODENet or ConvODENet model, depending on the usecase.
 
-Usage : 
+Usage :
 ```python
 import tensorflow as tf
 from tfdiffeq.models import ODENet, ConvODENet
@@ -134,10 +133,6 @@ Since tensorflow doesn't yet support global setting of default datatype, the `tf
 
 - `move_to_device` : Attempts to move a `tf.Tensor` to a certain device. Can specify the device in the normal syntax of `cpu:0` or `gpu:x` where `x` must be replaced by any number representing the GPU ID. Falls back to CPU if GPU is unavailable.
 
-- `cast_double` : Casts either a single `tf.Tensor` or a list of tensors to the `tf.float64` datatype.
-
-- `func_cast_double` : A wrapper that casts all input arguments of the wrapped function to `tf.float64` dtype. Only affects arguments that are of type `tf.Tensor` or are a list of `tf.Tensor`.
-
 - Dont forget to add a `@tf.function` on your `call(self, t, u)` methods defined in a Keras Models for some significant speed up in some cases !
 
 # Examples
@@ -145,9 +140,9 @@ Since tensorflow doesn't yet support global setting of default datatype, the `tf
 The scripts for the examples can be found in the `examples` folder, along with the weights and results for the `latent_ode.py` script as it takes some time to train. Two results have been replicated from the original codebase:
 
  - `ode_demo.py` : A basic example which contains a short implementation of learning a dynamics model to mimic a spiral ODE.
- 
+
  The training should look similar to this:
- 
+
 ![ode spiral demo](https://github.com/titu1994/tfdiffeq/blob/master/images/demo1.gif?raw=true)
 
 - `circular_ode_demo.py` : A basic example similar to above which contains a short implementation of learning a dynamics model to mimic a circular ODE.
@@ -164,9 +159,9 @@ optimized routines. This should take roughly 1 minute on a modern machine.
  ![lorenz attractor](https://github.com/titu1994/tfdiffeq/blob/master/images/lorenz.png?raw=true)
 
 - `latent_ode.py` : Another basic example which uses variational inference to learn a path along a spiral.
- 
+
  Results should be similar to below after 1200 iterations:
- 
+
  ![ode spiral latent](https://github.com/titu1994/tfdiffeq/blob/master/images/vis.png?raw=true)
 
 - `ODENet` on MNIST
@@ -179,13 +174,13 @@ optimized routines. This should take roughly 1 minute on a modern machine.
  Reference :
 [ANODE: Unconditionally Accurate Memory-Efficient Gradients for Neural ODEs](https://arxiv.org/abs/1902.10298)
 
- 
+
 ![Universal ODE](https://github.com/titu1994/tfdiffeq/blob/master/images/universal_ode.png?raw=true)
- 
+
 - `Universal Differential Equations`
 
 Following the methodology in the paper [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385), we reproduce (sub-optimally) the Lotke-Volterra experiment in the following notebook - [UniversalNeuralODE.ipynb](https://github.com/titu1994/tfdiffeq/blob/master/examples/UniversalNeuralODE.ipynb)
- 
+
 References : [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385)
 
 - `Continious Normalizing Flows`
@@ -209,7 +204,7 @@ If you found this library useful in your research, please consider citing
   year={2018}
 }
 ```
- 
+
 # Requirements
 
 Install the required Tensorflow version along with the package using either
@@ -219,7 +214,7 @@ pip install .[tf]  # for cpu
 pip install .[tf-gpu]  # for gpu
 pip install .[tests]  # for cpu testing
 ```
- 
+
  - Tensorflow TF 2 / 1.15.0 or above. Prefereably TF 2.0 when it comes out, as the entire codebase *requires* Eager Execution.
  - Tensorflow Probability (for CNF example only)
  - matplotlib
@@ -227,5 +222,5 @@ pip install .[tests]  # for cpu testing
  - scipy (for tests)
  - six
  - pysindy (for Universal Differential Equations support only)
- 
- 
+
+
