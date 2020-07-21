@@ -76,9 +76,8 @@ def OdeintAdjointMethod(*args):
                         gradys[eval_ix] = tf.expand_dims(gradys[eval_ix], axis=0)
 
             else:
-                for grad_ix in range(len(gradys)):
-                    if len(gradys[grad_ix].shape) < len(func_eval.shape):
-                        gradys[grad_ix] = tf.expand_dims(gradys[grad_ix], axis=0)
+                if len(gradys.shape) < len(func_eval.shape):
+                    gradys = tf.expand_dims(gradys, axis=0)
             vjp_t, *vjp_y_and_params = tape.gradient(
                 func_eval,
                 (t,) + y + f_params,
@@ -171,7 +170,7 @@ def OdeintAdjointMethod(*args):
 
 
 def odeint_adjoint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None, adjoint_method=None, adjoint_rtol=None,
-                   adjoint_atol=None, adjoint_options=None:
+                   adjoint_atol=None, adjoint_options=None):
     # We need this in order to access the variables inside this module,
     # since we have no other way of getting variables along the execution path.
     if not isinstance(func, tf.keras.Model):
@@ -200,16 +199,16 @@ def odeint_adjoint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None,
             def call(self, t, y):
                 return (self.base_func(t, y[0]),)
 
-    tensor_input = True
-    y0 = (y0,)
-    func = TupleFunc(func)
+        tensor_input = True
+        y0 = (y0,)
+        func = TupleFunc(func)
 
     # build the function to get its variables
     if not func.built:
         _ = func(tf.constant(0., dtype=y0[0].dtype), y0)
 
     global _arguments
-    _arguments = _Arguments(func, method, options, rtol, atol)
+    _arguments = _Arguments(func, method, options, rtol, atol, adjoint_method, adjoint_rtol, adjoint_atol, adjoint_options)
     ys = OdeintAdjointMethod(*y0, t)
 
     if tensor_input or isinstance(ys, (list, tuple)):
