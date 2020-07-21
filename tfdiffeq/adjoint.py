@@ -24,7 +24,7 @@ def grad_wrapper(func):
     """Necessary to fix tensorflow "variables in gradspec.args" error"""
     @six.wraps(func)
     def wrapper(*args, **kwargs):
-        result = func(*new_args, **kwargs)
+        result = func(*args, **kwargs)
         return result
     return wrapper
 
