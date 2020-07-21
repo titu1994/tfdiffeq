@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from tfdiffeq.misc import (
     _scaled_dot_product, _convert_to_tensor, _is_finite, _select_initial_step, _handle_unused_kwargs,
-    _numel, cast_double, move_to_device)
+    _numel, move_to_device)
 from tfdiffeq.rk_common import _RungeKuttaState, _ButcherTableau, _runge_kutta_step
 from tfdiffeq.solvers import AdaptiveStepsizeODESolver
 
@@ -31,7 +31,7 @@ _TSITOURAS_TABLEAU = _ButcherTableau(
 
 
 def _interp_coeff_tsit5(t0, dt, eval_t):
-    t = cast_double((eval_t - t0) / dt)
+    t = (eval_t - t0) / dt
     b1 = -1.0530884977290216 * t * (t - 1.3299890189751412) * (t ** 2 - 1.4364028541716351 * t + 0.7139816917074209)
     b2 = 0.1017 * t ** 2 * (t ** 2 - 2.1966568338249754 * t + 1.2949852507374631)
     b3 = 2.490627285651252793 * t ** 2 * (t ** 2 - 2.38535645472061657 * t + 1.57803468208092486)
@@ -43,7 +43,7 @@ def _interp_coeff_tsit5(t0, dt, eval_t):
 
 
 def _interp_eval_tsit5(t0, t1, k, eval_t):
-    dt = cast_double(t1) - cast_double(t0)
+    dt = t1 - t0
     y0 = tuple(k_[0] for k_ in k)
     interp_coeff = _interp_coeff_tsit5(t0, dt, eval_t)
     y_t = tuple(y0_ + _scaled_dot_product(dt, interp_coeff, k_) for y0_, k_ in zip(y0, k))

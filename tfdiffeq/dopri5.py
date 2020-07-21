@@ -1,8 +1,8 @@
 # Based on https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/integrate
 import tensorflow as tf
 from tfdiffeq.misc import (
-    _scaled_dot_product, _convert_to_tensor, _is_finite, _select_initial_step, _handle_unused_kwargs, _is_iterable,
-    _optimal_step_size, _compute_error_ratio, move_to_device, cast_double
+    _scaled_dot_product, _convert_to_tensor, _is_finite, _select_initial_step, _handle_unused_kwargs, 
+    _is_iterable, _optimal_step_size, _compute_error_ratio, move_to_device
 )
 from tfdiffeq.solvers import AdaptiveStepsizeODESolver
 from tfdiffeq.interp import _interp_fit, _interp_evaluate

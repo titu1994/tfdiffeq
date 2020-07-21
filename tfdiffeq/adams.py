@@ -137,8 +137,10 @@ class VariableCoefficientAdamsBashforth(AdaptiveStepsizeODESolver):
 
         # Explicit predictor step.
         g, phi = g_and_explicit_phi(prev_t, next_t, prev_phi, order)
+        # g = move_to_device(g, y0[0].device)
 
         g = tf.cast(g, dt_cast.dtype)
+        # phi = [tf.cast(phi_, dt_cast.dtype) for phi_ in phi]
 
         p_next = tuple(
             y0_ + _scaled_dot_product(dt_cast, g[:max(1, order - 1)], phi_[:max(1, order - 1)])

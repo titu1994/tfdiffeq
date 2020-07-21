@@ -6,68 +6,6 @@ import tensorflow as tf
 from tensorflow.python import ops
 
 
-def cast_float(x):
-    if isinstance(x, Iterable):
-        try:
-            x = tf.cast(x, tf.float32)
-        except Exception:
-            xn = []
-            for xi in x:
-                xi = cast_float(xi)
-                xn.append(xi)
-
-            x = type(x)(xn)
-    else:
-        if hasattr(x, 'dtype') and x.dtype != tf.float32:
-            x = tf.cast(x, tf.float32)
-
-        elif type(x) != float:
-            x = float(x)
-
-    return x
-
-
-def cast_double(x):
-    if isinstance(x, Iterable):
-        try:
-            x = tf.cast(x, tf.float64)
-        except Exception:
-            xn = []
-            for xi in x:
-                xi = cast_double(xi)
-                xn.append(xi)
-
-            x = type(x)(xn)
-
-    else:
-        if hasattr(x, 'dtype') and x.dtype != tf.float64:
-            x = tf.cast(x, tf.float64)
-
-        elif type(x) != float:
-            x = float(x)
-
-    return x
-
-
-def func_cast_double(func):
-    """ Casts all Tensor arguments to float64 """
-    @six.wraps(func)
-    def wrapper(*args, **kwargs):
-        cast_args = []
-        for arg in args:
-            if isinstance(arg, tf.Tensor) or isinstance(arg, tf.Variable):
-                arg = cast_double(arg)
-            elif type(arg) == tuple or type(tuple) == list:
-                arg = cast_double(arg)
-
-            cast_args.append(arg)
-
-        result = func(*cast_args, **kwargs)
-        return result
-
-    return wrapper
-
-
 def move_to_device(x, device):
     """ Utility function to move a tensor to a device """
 
@@ -181,7 +119,7 @@ def _possibly_nonzero(x):
 def _scaled_dot_product(scale, xs, ys):
     """Calculate a scaled, vector inner product between lists of Tensors."""
     # Using _possibly_nonzero lets us avoid wasted computation.
-    return tf.math.add_n([tf.multiply(tf.multiply(scale, x), y) for x, y in zip(xs, ys) if _possibly_nonzero(x) or _possibly_nonzero(y)])
+    return tf.math.add_n([scale * x * y for x, y in zip(xs, ys) if _possibly_nonzero(x) or _possibly_nonzero(y)])
 
 
 def _dot_product(xs, ys):

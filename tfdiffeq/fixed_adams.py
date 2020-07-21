@@ -2,7 +2,7 @@ import collections
 import sys
 
 from tfdiffeq import rk_common
-from tfdiffeq.misc import _scaled_dot_product, _has_converged, func_cast_double
+from tfdiffeq.misc import _scaled_dot_product, _has_converged
 from tfdiffeq.solvers import FixedGridODESolver
 
 _BASHFORTH_COEFFICIENTS = [

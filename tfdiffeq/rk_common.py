@@ -1,6 +1,6 @@
 # Based on https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/integrate
 import collections
-from tfdiffeq.misc import _scaled_dot_product, _convert_to_tensor, cast_double, func_cast_double
+from tfdiffeq.misc import _scaled_dot_product, _convert_to_tensor
 
 _ButcherTableau = collections.namedtuple('_ButcherTableau', 'alpha beta c_sol c_error')
 

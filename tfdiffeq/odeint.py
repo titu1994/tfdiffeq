@@ -19,6 +19,8 @@ SOLVERS = {
     'euler': Euler,
     'midpoint': Midpoint,
     'rk4': RK4,
+    'huen': Heun,
+    'heun': Heun,
     'adaptive_heun': AdaptiveHeunSolver
 }
 

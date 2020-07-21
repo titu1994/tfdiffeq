@@ -1,5 +1,4 @@
 from tfdiffeq import rk_common
-from tfdiffeq.misc import func_cast_double, cast_double
 from tfdiffeq.solvers import FixedGridODESolver
 
 class Euler(FixedGridODESolver):

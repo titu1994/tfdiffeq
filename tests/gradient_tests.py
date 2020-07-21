@@ -8,7 +8,7 @@ from tests.check_grad import gradcheck
 
 eps = 1e-12
 
-# torch.set_default_dtype(torch.float64)
+tf.keras.backend.set_floatx('float64')
 TEST_DEVICE = "gpu:0" if tf.test.is_gpu_available() else "cpu:0"
 
 
@@ -21,7 +21,7 @@ class TestGradient(unittest.TestCase):
     def test_huen(self):
         f, y0, t_points, _ = problems.construct_problem(TEST_DEVICE)
 
-        func = lambda y0, t_points: tfdiffeq.odeint(f, y0, t_points, method='huen')
+        func = lambda y0, t_points: tfdiffeq.odeint(f, y0, t_points, method='heun')
         self.assertTrue(gradcheck(func, (y0, t_points)))
 
     def test_adaptive_heun(self):
