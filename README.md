@@ -11,7 +11,7 @@ Supports Augmented Neural ODE Architectures from the paper [Augmented Neural ODE
 
 Support for Universal Differential Equations (for ODE case) from the paper [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385). While slow, and restricted to ODEs only, it works well enough on Lotke Voltera system as described in example notebook.
 
-Support for Hypersolvers from the paper [Hypersolvers: Toward Fast Continuous-Depth Models](https://arxiv.org/abs/2007.09601). Currently implements the paper implementation of `HyperEuler` and `HyperHuen`. **NOTE**: These APIs are subject to change once the paper releases source code.
+Support for Hypersolvers from the paper [Hypersolvers: Toward Fast Continuous-Depth Models](https://arxiv.org/abs/2007.09601). Currently implements the paper implementation of `HyperEuler` and `HyperHuen`. The paper [Deep Euler method: solving ODEs by approximating the local truncation error of the Euler method](https://arxiv.org/abs/2003.09573) proposes nearly the same approach. **NOTE**: These APIs are subject to change once the paper releases source code.
 
 Now supports Adjoint methods for Dopri5 solver due to [PR #3](https://github.com/titu1994/tfdiffeq/pull/3) from [@eozd](https://github.com/eozd).
 
