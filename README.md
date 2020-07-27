@@ -11,6 +11,8 @@ Supports Augmented Neural ODE Architectures from the paper [Augmented Neural ODE
 
 Support for Universal Differential Equations (for ODE case) from the paper [Universal Differential Equations for Scientific Machine Learning](https://arxiv.org/abs/2001.04385). While slow, and restricted to ODEs only, it works well enough on Lotke Voltera system as described in example notebook.
 
+Support for Hypersolvers from the paper [Hypersolvers: Toward Fast Continuous-Depth Models](https://arxiv.org/abs/2007.09601). Currently implements the paper implementation of `HyperEuler` and `HyperHuen`. **NOTE**: These APIs are subject to change once the paper releases source code.
+
 Now supports Adjoint methods for Dopri5 solver due to [PR #3](https://github.com/titu1994/tfdiffeq/pull/3) from [@eozd](https://github.com/eozd).
 
 As the solvers are implemented in Tensorflow, algorithms in this repository fully support running on the GPU, and are differentiable. Also supports prebuilt ODENet and ConvODENet tf.keras Models that can be used as is or embedded in a larger architecture. 
@@ -80,6 +82,54 @@ class LotkaVolterra(tf.keras.Model):
     return tf.stack([dR_dT, dF_dT])
 ```
 
+## Examples of using Hypersolvers
+
+Please refer to the Colab Notebook - [hyper_solvers](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/hyper_solvers.ipynb), in order to see a demonstration of a `HyperHuen` network trained to evaluate Lorenz Attractor chaotic ODE. 
+
+This above notebook includes code blocks to be used as reference to train and evaluate such Hypersolvers.
+
+```python
+import tensorflow as tf
+from tfdiffeq.hyper import HyperHeun
+
+# Create a Hyper network that HyperHuen will use as the Solver network `g`
+
+class HyperSolverModule(tf.keras.Model):
+  def __init__(self, func_input_dim, hidden_dim=64):
+    super().__init__(dtype='float64')
+    self.func_input_dim = func_input_dim
+    
+    # Input dim isnt used (Keras handled it automatically)
+    # But for illustration purposes, it is provided
+    # Computed as ~ dim(y) + dim(dy) + 1 (for time axis)
+    self.input_dim = 2 * func_input_dim + 1
+    self.hidden_dim = hidden_dim
+    self.output_dim = func_input_dim
+
+    self.g = tf.keras.Sequential([
+        tf.keras.layers.Dense(self.hidden_dim),
+        tf.keras.layers.PReLU(),
+        tf.keras.layers.Dense(self.hidden_dim),
+        tf.keras.layers.PReLU(),
+        tf.keras.layers.Dense(self.hidden_dim),
+        tf.keras.layers.PReLU(),
+        tf.keras.layers.Dense(self.output_dim)
+    ])
+    
+  @tf.function
+  def call(self, x):
+    return self.g(x)
+
+# Assume we use Lorenz Attractor as the ODE we want to model - `f`
+
+f = Lorenz(sigma, beta, rho)
+g = HyperSolverModule(func_input_dim=3, hidden_dim=64)
+
+hyper_heun = HyperHeun(f, g)
+
+# The stepe to train this model are available in the notebook mentioned above
+```
+
 # Prebuilt Models
 This library now supports prebuilt models inside the `tfdiffeq.models` namespace - specifically the Neural ODENet and Convolutional Neural ODENet. In addition, both of these models inherently support **Augmented Neural ODENets**. 
 
@@ -127,6 +177,12 @@ x = ODENet(...)(x)  # or dont use flatten and use ConvODENet directly
  - `rk4`: Fourth-order Runge-Kutta with 3/8 rule.
  - `explicit_adams`: Explicit Adams.
  - `fixed_adams`: Implicit Adams
+
+## Hyper-solvers (experimental)
+
+ - `HyperEuler`: Hyper Euler model.
+ - `HyperMidpoint`: Hyper Midpoint model.
+ - `HyperHeun`: Hyper Heun model.
 
 ## Compatibility
 
@@ -197,6 +253,14 @@ Ported Continious Normalizing Flow example from the torchdiffeq repository -  [C
 </p>
 
 References : [FFJORD: Free-Form Continuous Dynamics for Scalable Reversible Generative Models](https://openreview.net/forum?id=rJxgknCcK7)
+
+![Hypersolvers](https://github.com/titu1994/tfdiffeq/blob/master/images/hyperhuen_prediction.png?raw=true)
+- [`Hypersolvers`](https://colab.research.google.com/github/titu1994/tfdiffeq/blob/master/examples/hyper_solvers.ipynb)
+
+Example of constructing, training and evaluating Hypersolver networks as described in the paper [Hypersolvers: Toward Fast Continuous-Depth Models](https://arxiv.org/abs/2007.09601). **NOTE**: Current API is experiemental and subject to change when the paper releases its code.
+
+References : [Hypersolvers: Toward Fast Continuous-Depth Models](https://arxiv.org/abs/2007.09601)
+
 
 # Reference
 If you found this library useful in your research, please consider citing
