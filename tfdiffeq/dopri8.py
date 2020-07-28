@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tfdiffeq.misc import (
     _scaled_dot_product, _convert_to_tensor, _is_finite, _select_initial_step, _handle_unused_kwargs, _is_iterable,
-    _optimal_step_size, _compute_error_ratio, cast_double, move_to_device
+    _optimal_step_size, _compute_error_ratio, move_to_device
 )
 from tfdiffeq.solvers import AdaptiveStepsizeODESolver
 from tfdiffeq.interp import _interp_fit, _interp_evaluate
@@ -81,9 +81,6 @@ c_mid = C_mid
 
 def _interp_fit_dopri8(y0, y1, k, dt, tableau=_DOPRI8_TABLEAU):
     """Fit an interpolating polynomial to the results of a Runge-Kutta step."""
-    dt = cast_double(dt)
-    y0 = cast_double(y0)
-
     y_mid = tuple(y0_ + _scaled_dot_product(dt, c_mid, k_) for y0_, k_ in zip(y0, k))
     f0 = tuple(k_[0] for k_ in k)
     f1 = tuple(k_[-1] for k_ in k)
@@ -124,8 +121,9 @@ class Dopri8Solver(AdaptiveStepsizeODESolver):
     def before_integrate(self, t):
         f0 = self.func(tf.cast(t[0], self.y0[0].dtype), self.y0)
         if self.first_step is None:
-            first_step = _select_initial_step(self.func, t[0], self.y0, 7, self.rtol[0], self.atol[0], f0=f0)
-            first_step = move_to_device(first_step, t.device)
+            first_step = _select_initial_step(
+                self.func, t[0], self.y0, 7, self.rtol[0], self.atol[0], f0=f0)
+            first_step = move_to_device(tf.cast(first_step, t.dtype), t.device)
         else:
             first_step = _convert_to_tensor(self.first_step, dtype=t.dtype, device=t.device)
         self.rk_state = _RungeKuttaState(self.y0, f0, t[0], t[0], first_step, interp_coeff=[self.y0] * 5)
@@ -145,7 +143,8 @@ class Dopri8Solver(AdaptiveStepsizeODESolver):
         ########################################################
         #                      Assertions                      #
         ########################################################
-        assert t0 + dt > t0, 'underflow in dt {}'.format(dt.item())
+        dt = tf.cast(dt, t0.dtype)
+        assert t0 + dt > t0, 'underflow in dt {}'.format(dt.numpy())
         for y0_ in y0:
             assert _is_finite(tf.abs(y0_)), 'non-finite values in state `y`: {}'.format(y0_)
         y1, f1, y1_error, k = _runge_kutta_step(self.func, y0, f0, t0, dt, tableau=_DOPRI8_TABLEAU)

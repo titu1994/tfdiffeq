@@ -82,8 +82,7 @@ class ODEFunc(tf.keras.Model):
             # Shape (batch_size, data_dim + 1)
             t_and_x = tf.concat([t_vec, x], axis=-1)
             # Shape (batch_size, hidden_dim)
-            # TODO: Remove cast when Keras supports double
-            out = self.fc1(tf.cast(t_and_x, tf.float32))
+            out = self.fc1(t_and_x)
         else:
             out = self.fc1(x)
         out = self.non_linearity(out)
@@ -254,8 +253,7 @@ class ODENet(tf.keras.Model):
     def call(self, x, training=None, return_features=False):
         features = self.odeblock(x, training=training)
 
-        # TODO: Remove cast when keras supports double
-        pred = self.linear_layer(tf.cast(features, tf.float32))
+        pred = self.linear_layer(features)
         if return_features:
             return features, pred
         return pred

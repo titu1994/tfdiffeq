@@ -6,11 +6,11 @@ import numpy as np
 
 import tensorflow as tf
 
-tf.enable_eager_execution()
-
 parser = argparse.ArgumentParser('ODE demo')
 parser.add_argument('--method', type=str, choices=['dopri5', 'adams'], default='dopri5')
 parser.add_argument('--data_size', type=int, default=1000)
+parser.add_argument('--batch_time', type=int, default=16)
+parser.add_argument('--batch_size', type=int, default=16)
 parser.add_argument('--niters', type=int, default=2000)
 parser.add_argument('--viz', action='store_true')
 parser.add_argument('--gpu', type=int, default=0)
@@ -19,10 +19,11 @@ parser.set_defaults(viz=True)
 args = parser.parse_args()
 
 from tfdiffeq import odeint
+tf.keras.backend.set_floatx('float64')
 
 device = 'gpu:' + str(args.gpu) if tf.test.is_gpu_available() else 'cpu:0'
 
-true_y0 = tf.convert_to_tensor([[0.5, 0.01]])
+true_y0 = tf.convert_to_tensor([[0.5, 0.01]], dtype=tf.float64)
 t = tf.linspace(0., 25., args.data_size)
 true_A = tf.convert_to_tensor([[-0.1, 3.0], [-3.0, -0.1]], dtype=tf.float64)
 
@@ -30,7 +31,6 @@ true_A = tf.convert_to_tensor([[-0.1, 3.0], [-3.0, -0.1]], dtype=tf.float64)
 class Lambda(tf.keras.Model):
 
     def call(self, t, y):
-        y = tf.cast(y, tf.float64)
         return tf.matmul(y, true_A)
 
 
@@ -128,7 +128,6 @@ class ODEFunc(tf.keras.Model):
                                        kernel_initializer=tf.keras.initializers.TruncatedNormal(stddev=0.1))
 
     def call(self, t, y):
-        y = tf.cast(y, tf.float32)
         x = self.x(y)
         y = self.y(x)
         return y
@@ -165,7 +164,7 @@ if __name__ == '__main__':
         func = ODEFunc()
 
         lr = 1e-3
-        optimizer = tf.train.RMSPropOptimizer(lr)
+        optimizer = tf.keras.optimizers.RMSprop(lr)
 
         for itr in range(1, args.niters + 1):
 
@@ -182,7 +181,7 @@ if __name__ == '__main__':
             time_meter.update(time.time() - end)
             loss_meter.update(loss.numpy())
 
-            if itr % args.test_freq == 0:
+            if itr % 10 == 0:
                 pred_y = odeint(func, true_y0, t)
                 loss = tf.reduce_mean(tf.abs(pred_y - true_y))
                 print('Iter {:04d} | Total Loss {:.6f}'.format(itr, loss.numpy()))

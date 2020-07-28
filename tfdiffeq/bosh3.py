@@ -54,7 +54,7 @@ class Bosh3Solver(AdaptiveStepsizeODESolver):
         f0 = self.func(tf.cast(t[0], self.y0[0].dtype), self.y0)
         if self.first_step is None:
             first_step = _select_initial_step(self.func, t[0], self.y0, 2, self.rtol[0], self.atol[0], f0=f0)
-            first_step = move_to_device(first_step, t.device)
+            first_step = move_to_device(tf.cast(first_step, t.dtype), t.device)
         else:
             first_step = _convert_to_tensor(self.first_step, dtype=t.dtype, device=t.device)
         self.rk_state = _RungeKuttaState(self.y0, f0, t[0], t[0], first_step, interp_coeff=[self.y0] * 5)

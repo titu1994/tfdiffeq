@@ -3,13 +3,13 @@ import time
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-from tfdiffeq import odeint, cast_double
+from tfdiffeq import odeint
 
 if tf.version.VERSION.startswith("1."):
     tf.enable_v2_behavior()
 
 
-# tf.keras.backend.set_floatx('float64')
+tf.keras.backend.set_floatx('float64')
 
 
 # Lorenz Attractor requires a large number of non-matrix computations
@@ -29,8 +29,6 @@ class Lorenz(tf.Module):
     @tf.function
     def __call__(self, t, y):
         """ y here is [x, y, z] """
-        y = cast_double(y)
-
         dx_dt = self.sigma * (y[1] - y[0])
         dy_dt = y[0] * (self.rho - y[2]) - y[1]
         dz_dt = y[0] * y[1] - self.beta * y[2]

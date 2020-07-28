@@ -3,49 +3,6 @@ import warnings
 from typing import Iterable
 
 import tensorflow as tf
-from tensorflow.python import ops
-
-
-def cast_double(x):
-    if isinstance(x, Iterable):
-        try:
-            x = tf.cast(x, tf.float64)
-        except Exception:
-            xn = []
-            for xi in x:
-                xi = cast_double(xi)
-                xn.append(xi)
-
-            x = type(x)(xn)
-
-    else:
-        if hasattr(x, 'dtype') and x.dtype != tf.float64:
-            x = tf.cast(x, tf.float64)
-
-        elif type(x) != float:
-            x = float(x)
-
-    return x
-
-
-def func_cast_double(func):
-    """ Casts all Tensor arguments to float64 """
-
-    @six.wraps(func)
-    def wrapper(*args, **kwargs):
-        cast_args = []
-        for arg in args:
-            if isinstance(arg, tf.Tensor) or isinstance(arg, tf.Variable):
-                arg = cast_double(arg)
-            elif type(arg) == tuple or type(tuple) == list:
-                arg = cast_double(arg)
-
-            cast_args.append(arg)
-
-        result = func(*cast_args, **kwargs)
-        return result
-
-    return wrapper
 
 
 def move_to_device(x, device):
@@ -161,7 +118,7 @@ def _possibly_nonzero(x):
 def _scaled_dot_product(scale, xs, ys):
     """Calculate a scaled, vector inner product between lists of Tensors."""
     # Using _possibly_nonzero lets us avoid wasted computation.
-    return sum([(scale * x) * y for x, y in zip(xs, ys) if _possibly_nonzero(x) or _possibly_nonzero(y)])
+    return tf.math.add_n([scale * x * y for x, y in zip(xs, ys) if _possibly_nonzero(x) or _possibly_nonzero(y)])
 
 
 def _dot_product(xs, ys):
@@ -171,7 +128,8 @@ def _dot_product(xs, ys):
 
 def _has_converged(y0, y1, rtol, atol):
     """Checks that each element is within the error tolerance."""
-    error_tol = tuple(atol + rtol * tf.maximum(tf.abs(y0_), tf.abs(y1_)) for y0_, y1_ in zip(y0, y1))
+    error_tol = tuple(atol + rtol * tf.maximum(tf.abs(y0_), tf.abs(y1_))
+                      for y0_, y1_ in zip(y0, y1))
     error = tuple(tf.abs(y0_ - y1_) for y0_, y1_ in zip(y0, y1))
     return all(tf.reduce_all(error_ < error_tol_) for error_, error_tol_ in zip(error, error_tol))
 
@@ -219,8 +177,8 @@ def _norm(x):
 
 def _handle_unused_kwargs(solver, unused_kwargs):
     if len(unused_kwargs) > 0:
-        warnings.warn('{}: Unexpected arguments {}'.format(solver.__class__.__name__, unused_kwargs))
-
+        warnings.warn('{}: Unexpected arguments {}'.format(
+            solver.__class__.__name__, unused_kwargs))
 
 def _select_initial_step(fun, t0, y0, order, rtol, atol, f0=None):
     """Empirically select a good initial step.
@@ -254,15 +212,9 @@ def _select_initial_step(fun, t0, y0, order, rtol, atol, f0=None):
     .. [1] E. Hairer, S. P. Norsett G. Wanner, "Solving Ordinary Differential
            Equations I: Nonstiff Problems", Sec. II.4.
     """
-    t0 = move_to_device(t0, y0[0].device)
-    t0 = cast_double(t0)
-
-    y0 = cast_double(y0)
-
+    t0 = move_to_device(tf.cast(t0, y0[0].dtype), y0[0].device)
     if f0 is None:
         f0 = fun(t0, y0)
-
-    f0 = cast_double(f0)
 
     if hasattr(y0, 'shape'):
         count = y0.shape[0]
@@ -272,30 +224,23 @@ def _select_initial_step(fun, t0, y0, order, rtol, atol, f0=None):
     rtol = rtol if _is_iterable(rtol) else [rtol] * count
     atol = atol if _is_iterable(atol) else [atol] * count
 
-    rtol = [cast_double(r) for r in rtol]
-    atol = [cast_double(a) for a in atol]
-
     scale = tuple(atol_ + tf.abs(y0_) * rtol_ for y0_, atol_, rtol_ in zip(y0, atol, rtol))
-    scale = [cast_double(s) for s in scale]
 
     d0 = tuple(_norm(y0_ / scale_) for y0_, scale_ in zip(y0, scale))
     d1 = tuple(_norm(f0_ / scale_) for f0_, scale_ in zip(f0, scale))
 
     if max(d0).numpy() < 1e-5 or max(d1).numpy() < 1e-5:
-        h0 = move_to_device(tf.convert_to_tensor(1e-6), t0)
+        h0 = move_to_device(tf.convert_to_tensor(1e-6, dtype=t0.dtype), t0)
     else:
         h0 = 0.01 * max(d0_ / d1_ for d0_, d1_ in zip(d0, d1))
 
-    h0 = cast_double(h0)
-
     y1 = tuple(y0_ + h0 * f0_ for y0_, f0_ in zip(y0, f0))
     f1 = fun(t0 + h0, y1)
-    f1 = cast_double(f1)
-
     d2 = tuple(_norm((f1_ - f0_) / scale_) / h0 for f1_, f0_, scale_ in zip(f1, f0, scale))
 
     if max(d1).numpy() <= 1e-15 and max(d2).numpy() <= 1e-15:
-        h1 = tf.reduce_max([move_to_device(tf.convert_to_tensor(1e-6, dtype=tf.float64), h0.device), h0 * 1e-3])
+        h1 = tf.reduce_max([move_to_device(tf.convert_to_tensor(
+            1e-6, dtype=h0.dtype), h0.device), h0 * 1e-3])
     else:
         h1 = (0.01 / max(d1 + d2)) ** (1. / float(order + 1))
 
@@ -307,14 +252,15 @@ def _compute_error_ratio(error_estimate, error_tol=None, rtol=None, atol=None, y
         assert rtol is not None and atol is not None and y0 is not None and y1 is not None
         rtol if _is_iterable(rtol) else [rtol] * len(y0)
         atol if _is_iterable(atol) else [atol] * len(y0)
-        y0 = cast_double(y0)
 
         error_tol = tuple(
             atol_ + rtol_ * tf.reduce_max([tf.abs(y0_), tf.abs(y1_)])
             for atol_, rtol_, y0_, y1_ in zip(atol, rtol, y0, y1)
         )
-    error_ratio = tuple(error_estimate_ / error_tol_ for error_estimate_, error_tol_ in zip(error_estimate, error_tol))
-    mean_sq_error_ratio = tuple(tf.reduce_mean(error_ratio_ * error_ratio_) for error_ratio_ in error_ratio)
+    error_ratio = tuple(error_estimate_ / error_tol_ for error_estimate_,
+                        error_tol_ in zip(error_estimate, error_tol))
+    mean_sq_error_ratio = tuple(tf.reduce_mean(error_ratio_ * error_ratio_)
+                                for error_ratio_ in error_ratio)
     return mean_sq_error_ratio
 
 
@@ -329,14 +275,15 @@ def _optimal_step_size(last_step, mean_error_ratio, safety=0.9, ifactor=10.0, df
         dfactor = _convert_to_tensor(1, dtype=tf.float64, device=mean_error_ratio.device)
 
     error_ratio = tf.sqrt(mean_error_ratio)
-    error_ratio = cast_double(error_ratio)
+    error_ratio = tf.cast(error_ratio, last_step.dtype)
     error_ratio = move_to_device(error_ratio, last_step.device)
 
     exponent = tf.convert_to_tensor(1. / order)
-    exponent = cast_double(exponent)
+    exponent = tf.cast(exponent, last_step.dtype)
     exponent = move_to_device(exponent, last_step.device)
 
-    factor = tf.reduce_max([1. / ifactor, tf.reduce_min([error_ratio ** exponent / safety, 1. / dfactor])])
+    factor = tf.reduce_max(
+        [1. / ifactor, tf.reduce_min([error_ratio ** exponent / safety, 1. / dfactor])])
     return last_step / factor
 
 
@@ -345,7 +292,7 @@ def _check_inputs(func, y0, t):
     if isinstance(y0, tf.Tensor):
         tensor_input = True
 
-        if not isinstance(y0, ops.EagerTensor):
+        if not tf.is_tensor(y0):
             warnings.warn('Input is *not* an EagerTensor ! '
                           'Dummy op with zeros will be performed instead.')
 
@@ -355,6 +302,7 @@ def _check_inputs(func, y0, t):
         _base_nontuple_func_ = func
         func = lambda t, y: (_base_nontuple_func_(t, y[0]),)
 
+    assert isinstance(y0, tuple), 'y0 must be either a tf.Tensor or a tuple'
     if ((type(y0) == tuple) or (type(y0) == list)):
         if not tensor_input:
             y0_type = type(y0)
@@ -363,13 +311,6 @@ def _check_inputs(func, y0, t):
             for i in range(len(y0)):
                 assert isinstance(y0[i], tf.Tensor), 'each element must be a tf.Tensor ' \
                                                      'but received {}'.format(type(y0[i]))
-
-                if not isinstance(y0[i], ops.EagerTensor):
-                    warnings.warn('Input %d (zero-based) is *not* an EagerTensor ! '
-                                  'Dummy op with zeros will be performed instead.' % (i))
-
-                    y0[i] = tf.convert_to_tensor(tf.zeros(y0[i].shape))
-
             y0 = y0_type(y0)  # return to same type
     else:
         raise ValueError('y0 must be either a tf.Tensor or a tuple')

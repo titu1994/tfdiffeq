@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 tf.enable_eager_execution()
+tf.keras.backend.set_floatx('float64')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--adjoint', type=eval, default=False)
@@ -21,7 +22,7 @@ parser.add_argument('--train_dir', type=str, default='latent')
 args = parser.parse_args()
 
 
-from tfdiffeq import odeint, move_to_device, cast_double, func_cast_double
+from tfdiffeq import odeint, move_to_device
 
 
 def generate_spiral2d(nspiral=1000,
@@ -45,7 +46,7 @@ def generate_spiral2d(nspiral=1000,
       a, b: parameters of the Archimedean spiral
       savefig: plot the ground truth for sanity check
 
-    Returns: 
+    Returns:
       Tuple where first element is true trajectory of size (nspiral, ntotal, 2),
       second element is noisy observations of size (nspiral, nsample, 2),
       third element is timestamps of size (ntotal,),
@@ -112,7 +113,6 @@ class LatentODEfunc(tf.keras.Model):
 
     def call(self, t, x):
         self.nfe += 1
-        x = cast_double(x)
 
         out = self.fc1(x)
         out = self.fc2(out)
@@ -130,9 +130,6 @@ class RecognitionRNN(tf.keras.Model):
         self.h2o = tf.keras.layers.Dense(latent_dim * 2)
 
     def call(self, x, h):
-        x = cast_double(x)
-        h = cast_double(h)
-
         combined = tf.concat((x, h), axis=1)
         h = self.i2h(combined)
         out = self.h2o(h)
@@ -150,8 +147,6 @@ class Decoder(tf.keras.Model):
         self.fc2 = tf.keras.layers.Dense(obs_dim)
 
     def call(self, z):
-        z = cast_double(z)
-
         out = self.fc1(z)
         out = self.fc2(out)
         return out
@@ -176,7 +171,6 @@ class RunningAverageMeter(object):
         self.val = val
 
 
-@func_cast_double
 def log_normal_pdf(x, mean, logvar):
     const = tf.convert_to_tensor(np.array([2. * np.pi]), dtype=tf.float64)
     const = move_to_device(const, device)
@@ -184,7 +178,6 @@ def log_normal_pdf(x, mean, logvar):
     return -.5 * (const + logvar + (x - mean) ** 2. / tf.exp(logvar))
 
 
-@func_cast_double
 def normal_kl(mu1, lv1, mu2, lv2):
     v1 = tf.exp(lv1)
     v2 = tf.exp(lv2)
@@ -255,9 +248,9 @@ if __name__ == '__main__':
         )
 
         orig_ts = tf.convert_to_tensor(orig_ts, dtype=tf.float64)
-        orig_trajs = tf.convert_to_tensor(orig_trajs, dtype=tf.float32)
-        samp_trajs = tf.convert_to_tensor(samp_trajs, dtype=tf.float32)
-        samp_ts = tf.convert_to_tensor(samp_ts, dtype=tf.float32)
+        orig_trajs = tf.convert_to_tensor(orig_trajs, dtype=tf.float64)
+        samp_trajs = tf.convert_to_tensor(samp_trajs, dtype=tf.float64)
+        samp_ts = tf.convert_to_tensor(samp_ts, dtype=tf.float64)
 
         # model
         func = LatentODEfunc(latent_dim, nhidden)

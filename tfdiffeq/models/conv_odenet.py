@@ -30,9 +30,6 @@ class Conv2dTime(tf.keras.Model):
 
     @tf.function
     def call(self, t, x, training=None, **kwargs):
-        # TODO: Remove cast when Keras supports double
-        t = tf.cast(t, x.dtype)
-
         if self.channel_axis == 1:
             # Shape (batch_size, 1, height, width)
             tt = tf.ones_like(x[:, :1, :, :], dtype=t.dtype) * t  # channel dim = 1
@@ -42,9 +39,6 @@ class Conv2dTime(tf.keras.Model):
             tt = tf.ones_like(x[:, :, :, :1], dtype=t.dtype) * t  # channel dim = -1
 
         ttx = tf.concat([tt, x], axis=self.channel_axis)  # concat at channel dim
-
-        # TODO: Remove cast when Keras supports double
-        ttx = tf.cast(ttx, tf.float32)
 
         return self._layer(ttx)
 
@@ -142,8 +136,6 @@ class Conv2dODEFunc(tf.keras.Model):
             out = self.non_linearity(out)
             out = self.conv3(t, out)
         else:
-            # TODO: Remove cast to tf.float32 once Keras supports tf.float64
-            x = tf.cast(x, tf.float32)
             out = self.conv1(x)
             out = self.non_linearity(out)
             out = self.conv2(out)
@@ -212,8 +204,7 @@ class Conv2dODENet(tf.keras.Model):
     def call(self, x, training=None, return_features=False):
         features = self.odeblock(x, training=training)
 
-        # TODO: Remove cast when Keras supports double
-        pred = self.output_layer(tf.cast(features, tf.float32))
+        pred = self.output_layer(features)
 
         if return_features:
             return features, pred

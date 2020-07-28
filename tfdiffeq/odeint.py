@@ -1,14 +1,12 @@
-from tensorflow.python.eager.context import eager_mode
-
-from tfdiffeq.adams import VariableCoefficientAdamsBashforth
-from tfdiffeq.dopri5 import Dopri5Solver
-from tfdiffeq.dopri8 import Dopri8Solver
-from tfdiffeq.fixed_adams import AdamsBashforth, AdamsBashforthMoulton
-from tfdiffeq.fixed_grid import Euler, Midpoint, RK4, Heun
-from tfdiffeq.adaptive_huen import AdaptiveHeunSolver
-from tfdiffeq.bosh3 import Bosh3Solver
-from tfdiffeq.misc import _check_inputs
-from tfdiffeq.tsit5 import Tsit5Solver
+from .adams import VariableCoefficientAdamsBashforth
+from .dopri5 import Dopri5Solver
+from .dopri8 import Dopri8Solver
+from .fixed_adams import AdamsBashforth, AdamsBashforthMoulton
+from .fixed_grid import Euler, Midpoint, RK4, Heun
+from .adaptive_huen import AdaptiveHeunSolver
+from .bosh3 import Bosh3Solver
+from .misc import _check_inputs
+from .tsit5 import Tsit5Solver
 
 SOLVERS = {
     'explicit_adams': AdamsBashforth,
@@ -17,13 +15,13 @@ SOLVERS = {
     'tsit5': Tsit5Solver,
     'dopri5': Dopri5Solver,
     'dopri8': Dopri8Solver,
+    'bosh3': Bosh3Solver,
     'euler': Euler,
     'midpoint': Midpoint,
     'rk4': RK4,
-    'huen': Heun,  # Alias for backward compat
+    'huen': Heun,
     'heun': Heun,
-    'adaptive_heun': AdaptiveHeunSolver,
-    'bosh3': Bosh3Solver
+    'adaptive_heun': AdaptiveHeunSolver
 }
 
 
@@ -67,20 +65,17 @@ def odeint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None):
         TypeError: if `options` is supplied without `method`, or if `t` or `y0` has
             an invalid dtype.
     """
-    with eager_mode():
-        tensor_input, func, y0, t = _check_inputs(func, y0, t)
+    tensor_input, func, y0, t = _check_inputs(func, y0, t)
 
-        if options is None:
-            options = {}
-        elif method is None:
-            raise ValueError('cannot supply `options` without specifying `method`')
+    if options is None:
+        options = {}
+    elif method is None:
+        raise ValueError('cannot supply `options` without specifying `method`')
 
-        if method is None:
-            method = 'dopri5'
-
-        solver = SOLVERS[method](func, y0, rtol=rtol, atol=atol, **options)
-        solution = solver.integrate(t)
-
-        if tensor_input:
-            solution = solution[0]
-        return solution
+    if method is None:
+        method = 'dopri5'
+    solver = SOLVERS[method](func, y0, rtol=rtol, atol=atol, **options)
+    solution = solver.integrate(t)
+    if tensor_input:
+        solution = solution[0]
+    return solution
