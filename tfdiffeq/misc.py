@@ -3,7 +3,6 @@ import warnings
 from typing import Iterable
 
 import tensorflow as tf
-from tensorflow.python import ops
 
 
 def move_to_device(x, device):
@@ -293,7 +292,7 @@ def _check_inputs(func, y0, t):
     if isinstance(y0, tf.Tensor):
         tensor_input = True
 
-        if not isinstance(y0, ops.EagerTensor):
+        if not tf.is_tensor(y0):
             warnings.warn('Input is *not* an EagerTensor ! '
                           'Dummy op with zeros will be performed instead.')
 
