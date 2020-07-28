@@ -180,7 +180,7 @@ def OdeintAdjointMethod(*args):
     return ans, grad
 
 
-def odeint_adjoint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None, adjoint_method=None, adjoint_rtol=None,
+def odeint_adjoint(func, y0, t, rtol=1e-6, atol=1e-12, method=None, options=None, adjoint_method=None, adjoint_rtol=None,
                    adjoint_atol=None, adjoint_options=None):
     # We need this in order to access the variables inside this module,
     # since we have no other way of getting variables along the execution path.
@@ -213,10 +213,6 @@ def odeint_adjoint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None,
         tensor_input = True
         y0 = (y0,)
         func = TupleFunc(func)
-
-    # build the function to get its variables
-    if not func.built:
-        _ = func(tf.constant(0., dtype=y0[0].dtype), y0)
 
     global _arguments
     _arguments = _Arguments(func, method, options, rtol, atol, adjoint_method, adjoint_rtol, adjoint_atol, adjoint_options)
