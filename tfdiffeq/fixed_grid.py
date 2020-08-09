@@ -12,7 +12,7 @@ class Euler(FixedGridODESolver):
         with tf.device(self.device):
             self.eps = tf.convert_to_tensor(eps, dtype=self.dtype)
 
-    def step_func(self, func, t, dt, y):
+    def _step_func(self, func, t, dt, y):
         return dt * func(t + self.eps, y)
 
 
@@ -25,7 +25,7 @@ class Midpoint(FixedGridODESolver):
         with tf.device(self.device):
             self.eps = tf.convert_to_tensor(eps, dtype=self.dtype)
 
-    def step_func(self, func, t, dt, y):
+    def _step_func(self, func, t, dt, y):
         half_dt = 0.5 * dt
         y_mid = y + func(t + self.eps, y) * half_dt
         return dt * func(t + half_dt, y_mid)
@@ -43,7 +43,7 @@ class Heun(FixedGridODESolver):
         with tf.device(self.device):
             self.eps = tf.convert_to_tensor(eps, dtype=self.dtype)
 
-    def step_func(self, func, t, dt, y):
+    def _step_func(self, func, t, dt, y):
         f_outs = func(t + self.eps, y)
         ft_1_hat = y + dt * f_outs
         ft_1_outs = func(t + dt, ft_1_hat)

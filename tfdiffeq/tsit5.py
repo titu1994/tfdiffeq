@@ -87,7 +87,7 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
         self.max_num_steps = _convert_to_tensor(max_num_steps, dtype=tf.int32, device=y0[0].device)
         self.order = 5
 
-    def before_integrate(self, t):
+    def _before_integrate(self, t):
         if self.first_step is None:
             first_step = _select_initial_step(self.func, t[0], self.y0, 4, self.rtol, self.atol)
             first_step = move_to_device(tf.cast(first_step, t.dtype), t.device)
@@ -100,7 +100,7 @@ class Tsit5Solver(AdaptiveStepsizeODESolver):
             [self.y0] * 7
         )
 
-    def advance(self, next_t):
+    def _advance(self, next_t):
         """Interpolate through the next time point, integrating as necessary."""
         n_steps = 0
         while next_t > self.rk_state.t1:

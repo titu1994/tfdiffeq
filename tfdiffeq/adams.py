@@ -98,7 +98,7 @@ class VariableCoefficientAdamsBashforth(AdaptiveStepsizeODESolver):
         self.ifactor = _convert_to_tensor(ifactor, dtype=tf.float64, device=y0[0].device)
         self.dfactor = _convert_to_tensor(dfactor, dtype=tf.float64, device=y0[0].device)
 
-    def before_integrate(self, t):
+    def _before_integrate(self, t):
         prev_f = collections.deque(maxlen=self.max_order + 1)
         prev_t = collections.deque(maxlen=self.max_order + 1)
         phi = collections.deque(maxlen=self.max_order)
@@ -118,7 +118,7 @@ class VariableCoefficientAdamsBashforth(AdaptiveStepsizeODESolver):
         first_step = tf.cast(first_step, t[0].dtype)
         self.vcabm_state = _VCABMState(self.y0, prev_f, prev_t, next_t=t[0] + first_step, phi=phi, order=1)
 
-    def advance(self, final_t):
+    def _advance(self, final_t):
         final_t = _convert_to_tensor(final_t, device=self.vcabm_state.prev_t[0].device)
         while final_t > self.vcabm_state.prev_t[0]:
             # print("VCABM State T = ", final_t.numpy(), self.vcabm_state.y_n)

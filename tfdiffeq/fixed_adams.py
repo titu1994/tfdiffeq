@@ -197,7 +197,7 @@ class AdamsBashforthMoulton(FixedGridODESolver):
         error_ratio = _compute_error_ratio(tf.abs(y0 - y1), self.rtol, self.atol, y0, y1, _linf_norm)
         return error_ratio < 1.0
 
-    def step_func(self, func, t, dt, y):
+    def _step_func(self, func, t, dt, y):
         self._update_history(t, func(t, y))
         order = min(len(self.prev_f), self.max_order - 1)
         if order < _MIN_ORDER - 1:
