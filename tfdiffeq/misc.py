@@ -42,6 +42,13 @@ def move_to_device(x, device):
     return x
 
 
+def _checked_cast(x, y):
+    if x.dtype != y.dtype:
+        x = tf.cast(x, y.dtype)
+
+    return x
+
+
 def _check_len(x):
     """ Utility function to get the length of the tensor """
     if hasattr(x, 'shape'):
