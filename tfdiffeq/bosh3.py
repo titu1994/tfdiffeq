@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tfdiffeq.rk_common import RKAdaptiveStepsizeODESolver, _ButcherTableau, _runge_kutta_step
+from tfdiffeq.rk_common import RKAdaptiveStepsizeODESolver, _ButcherTableau
 
 _BOGACKI_SHAMPINE_TABLEAU = _ButcherTableau(
     alpha=tf.convert_to_tensor([1. / .2, 3. / 4., 1.], dtype=tf.float64),
