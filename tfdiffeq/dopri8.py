@@ -64,10 +64,10 @@ C_mid[13] = (20.3006925822100825485 * (h ** 5) - 53.9020777466385396792 * (h ** 
             h ** 3) - 19.0082099341608028453 * (h ** 2) + 2.3537586759714983486 * h) / (1 / h)
 
 A = tf.convert_to_tensor(A, dtype=tf.float64)
-B = [tf.convert_to_tensor.tensor(B_, dtype=tf.float64) for B_ in B]
-C_sol = tf.convert_to_tensor.tensor(C_sol, dtype=tf.float64)
-C_err = tf.convert_to_tensor.tensor(C_err, dtype=tf.float64)
-_C_mid = tf.convert_to_tensor.tensor(C_mid, dtype=tf.float64)
+B = [tf.convert_to_tensor(B_, dtype=tf.float64) for B_ in B]
+C_sol = tf.convert_to_tensor(C_sol, dtype=tf.float64)
+C_err = tf.convert_to_tensor(C_err, dtype=tf.float64)
+_C_mid = tf.convert_to_tensor(C_mid, dtype=tf.float64)
 
 _DOPRI8_TABLEAU = _ButcherTableau(alpha=A,
                                   beta=B,

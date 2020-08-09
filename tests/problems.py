@@ -4,37 +4,32 @@ import numpy as np
 import scipy.linalg
 import tensorflow as tf
 
-if tf.version.VERSION.startswith("1."):
-    tf.enable_v2_behavior()
-
-tf.keras.backend.set_floatx('float64')
-
 
 class ConstantODE(tf.keras.Model):
 
-    def __init__(self):
-        super(ConstantODE, self).__init__()
-        self.a = tf.Variable(0.2, dtype=tf.float64)
-        self.b = tf.Variable(3.0, dtype=tf.float64)
+    def __init__(self, dtype=None):
+        super(ConstantODE, self).__init__(dtype=dtype)
+        self.a = tf.Variable(0.2, dtype=self.dtype)
+        self.b = tf.Variable(3.0, dtype=self.dtype)
 
     def call(self, t, y):
         return self.a + (y - (self.a * t + self.b)) ** 5
 
     def y_exact(self, t):
-        t = tf.cast(t, tf.float64)
+        t = tf.cast(t, self.dtype)
         return self.a * t + self.b
 
 
 class SineODE(tf.keras.Model):
 
-    def __init__(self):
-        super(SineODE, self).__init__()
+    def __init__(self, dtype=None):
+        super(SineODE, self).__init__(dtype=dtype)
 
     def call(self, t, y):
         return 2 * y / t + t ** 4 * tf.sin(2 * t) - t ** 2 + 4 * t ** 3
 
     def y_exact(self, t):
-        t = tf.cast(t, tf.float64)
+        t = tf.cast(t, self.dtype)
         return -0.5 * t ** 4 * tf.cos(2 * t) + 0.5 * t ** 3 * tf.sin(2 * t) + 0.25 * t ** 2 * tf.cos(
             2 * t
         ) - t ** 3 + 2 * t ** 4 + (math.pi - 0.25) * t ** 2
@@ -42,12 +37,12 @@ class SineODE(tf.keras.Model):
 
 class LinearODE(tf.keras.Model):
 
-    def __init__(self, dim=10):
-        super(LinearODE, self).__init__()
+    def __init__(self, dim=10, dtype=None):
+        super(LinearODE, self).__init__(dtype=dtype)
         self.dim = dim
         U = np.random.randn(dim, dim) * 0.1
         A = 2 * U - (U + U.transpose(0, 1))
-        self.A = tf.Variable(A)
+        self.A = tf.Variable(A, dtype=dtype)
         self.initial_val = np.ones((dim, 1))
 
     def call(self, t, y):
@@ -57,7 +52,7 @@ class LinearODE(tf.keras.Model):
         return out
 
     def y_exact(self, t):
-        t = tf.cast(t, tf.float64)
+        t = tf.cast(t, self.dtype)
         t = t.numpy()
         A_np = self.A.numpy()
         ans = []
@@ -69,11 +64,20 @@ class LinearODE(tf.keras.Model):
 
 
 PROBLEMS = {'constant': ConstantODE, 'linear': LinearODE, 'sine': SineODE}
+DTYPES = (tf.float32, tf.float64)
+DEVICES = ['cpu']
+
+if tf.test.is_gpu_available():
+    DEVICES.append('gpu:0')
+
+FIXED_METHODS = ('euler', 'midpoint', 'rk4', 'explicit_adams', 'implicit_adams')
+ADAPTIVE_METHODS = ('dopri5', 'bosh3', 'adaptive_heun', 'dopri8')  # TODO: add in adaptive adams and tsit5 if/when they're fixed
+METHODS = FIXED_METHODS + ADAPTIVE_METHODS
 
 
-def construct_problem(device, npts=10, ode='constant', reverse=False):
+def construct_problem(device, npts=10, ode='constant', reverse=False, dtype=tf.float64):
     with tf.device(device):
-        f = PROBLEMS[ode]()
+        f = PROBLEMS[ode](dtype=dtype)
 
     t_points = tf.linspace(1., 8., npts)
     sol = f.y_exact(t_points)
@@ -91,8 +95,6 @@ def construct_problem(device, npts=10, ode='constant', reverse=False):
 
 
 if __name__ == '__main__':
-    tf.enable_eager_execution()
-
     f = SineODE()
     t_points = tf.linspace(1., 8., 100)
     sol = f.y_exact(t_points)
