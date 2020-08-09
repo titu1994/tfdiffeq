@@ -1,4 +1,3 @@
-# from .adams import VariableCoefficientAdamsBashforth
 from .dopri5 import Dopri5Solver
 from .dopri8 import Dopri8Solver
 from .fixed_adams import AdamsBashforth, AdamsBashforthMoulton
@@ -7,6 +6,7 @@ from .adaptive_huen import AdaptiveHeunSolver
 from .bosh3 import Bosh3Solver
 from .misc import _check_inputs, _flat_to_shape
 # from .tsit5 import Tsit5Solver
+# from .adams import VariableCoefficientAdamsBashforth
 
 SOLVERS = {
     'explicit_adams': AdamsBashforth,

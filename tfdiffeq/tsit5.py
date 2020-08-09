@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from tfdiffeq.misc import (
-    _scaled_dot_product, _convert_to_tensor, _is_finite, _select_initial_step, _handle_unused_kwargs,
+    _select_initial_step, _handle_unused_kwargs,
     _numel, move_to_device)
 from tfdiffeq.rk_common import _RungeKuttaState, _ButcherTableau, _runge_kutta_step
 from tfdiffeq.solvers import AdaptiveStepsizeODESolver
