@@ -29,7 +29,8 @@ class TestCollectionState(unittest.TestCase):
                 for method in ADAPTIVE_METHODS:
 
                     with self.subTest(dtype=dtype, device=device, method=method):
-                        tuple_y = tfdiffeq.odeint(tuple_f, tuple_y0, t_points, method=method)
+                        tuple_y = tfdiffeq.odeint(tuple_f, tuple_y0, t_points, method=method, options={'dtype': dtype})
+                        print(sol, tuple_y[0])
                         max_error0 = tf.reduce_max(sol - tuple_y[0])
                         max_error1 = tf.reduce_max(sol - tuple_y[1])
                         self.assertLess(max_error0, eps)

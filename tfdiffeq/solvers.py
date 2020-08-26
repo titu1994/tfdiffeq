@@ -20,15 +20,16 @@ class AdaptiveStepsizeODESolver(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     def integrate(self, t):
-        with tf.device(self.y0.device):
-            solution = tf.zeros([len(t), *self.y0.shape], dtype=self.y0.dtype)
-        solution[0] = self.y0
+        solution = []
+        solution.append(self.y0)
         t = tf.cast(t, self.dtype)
 
         self._before_integrate(t)
 
         for i in range(1, t.shape[0]):
-            solution[i] = self._advance(t[i])
+            solution.append(self._advance(t[i]))
+
+        solution = tf.concat(solution, axis=0)
         return solution
 
 

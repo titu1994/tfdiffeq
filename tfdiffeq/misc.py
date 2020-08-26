@@ -70,9 +70,10 @@ def _handle_unused_kwargs(solver, unused_kwargs):
         warnings.warn('{}: Unexpected arguments {}'.format(solver.__class__.__name__, unused_kwargs))
 
 
-@tf.function
+# @tf.function
 def _rms_norm(tensor):
     result = tf.sqrt(tf.reduce_mean(tf.square(tensor)))
+    print(f"RMS Norm : {result}")
     return result
 
 
@@ -118,10 +119,11 @@ def _mixed_linf_rms_norm(shapes):
         total = 0
         out = []
         for shape in shapes:
-            next_total = total + _numel(shape)
+            next_total = total + tf.reduce_prod(shape)
             out.append(_rms_norm(tensor[total:next_total]))
             total = next_total
-        assert total == _numel(tensor), "Shapes do not total to the full size of the tensor."
+        total = tf.cast(total, tensor.dtype)
+        assert total == _numel(tensor), f"Shapes numel ({_numel(tensor)}) does not match the total size ({total})."
         return max(out)
 
     return _norm
@@ -205,7 +207,7 @@ def _select_initial_step(func, t0, y0, order, rtol, atol, norm, f0=None):
     else:
         h1 = (0.01 / max(d1, d2)) ** (1. / float(order + 1))
 
-    result = tf.reduce_min([100 * h0, h1])
+    result = tf.reduce_min([100. * h0, h1])
     # result = _checked_cast(result, t_dtype)
     return result
 
@@ -228,7 +230,8 @@ def _select_initial_step(func, t0, y0, order, rtol, atol, norm, f0=None):
 
 
 def _compute_error_ratio(error_estimate, rtol, atol, y0, y1, norm):
-    error_tol = atol + rtol * tf.reduce_max(tf.abs(y0), tf.abs(y1))
+    error_tol = atol + rtol * tf.maximum(tf.abs(y0), tf.abs(y1))
+    print(f"Error tol : {error_tol}")
     return norm(error_estimate / error_tol)
 
 
@@ -239,21 +242,20 @@ def _optimal_step_size(last_step, error_ratio, safety, ifactor, dfactor, order):
 
     if error_ratio < 1:
         with tf.device(error_ratio.device):
-            dfactor = tf.convert_to_tensor(1, dtype=last_step.dtype)
+            dfactor = tf.ones([], dtype=last_step.dtype)
 
     # error_ratio = tf.sqrt(error_ratio)
     error_ratio = _checked_cast(error_ratio, last_step)
     error_ratio = move_to_device(error_ratio, last_step.device)
 
     with tf.device(last_step.device):
-        exponent = tf.convert_to_tensor(1. / order, dtype=last_step.dtype)
-        # exponent = tf.cast(exponent, last_step.dtype)
-        # exponent = move_to_device(exponent, last_step.device)
+        exponent = tf.convert_to_tensor(order, dtype=last_step.dtype)
+        exponent = 1. / exponent
 
     # factor = tf.reduce_max(
     #     [1. / ifactor, tf.reduce_min([error_ratio ** exponent / safety, 1. / dfactor])])
     # return last_step / factor
-    factor = tf.reduce_min(ifactor, tf.reduce_max(safety / error_ratio ** exponent, dfactor))
+    factor = tf.minimum(ifactor, tf.maximum(safety / error_ratio ** exponent, dfactor))
     return last_step * factor
 
 
@@ -289,8 +291,9 @@ def _tuple_tol(name, tol, shapes):
 def _flat_to_shape(tensor, length, shapes):
     tensor_list = []
     total = 0
+    len_count = sum(length) if length != () else 1
     for shape in shapes:
-        next_total = total + _numel(shape)
+        next_total = total + len_count * tf.reduce_prod(shape)
         # It's important that this be view((...)), not view(...). Else when length=(), shape=() it fails.
         tensor_list.append(tf.reshape(tensor[..., total:next_total], (*length, *shape)))
         total = next_total
@@ -305,7 +308,7 @@ class _TupleFunc(tf.keras.Model):
 
     def call(self, t, y):
         f = self.base_func(t, _flat_to_shape(y, (), self.shapes))
-        return tf.concat([tf.reshape(f_, [-1]) for f_ in f])
+        return tf.concat([tf.reshape(f_, [-1]) for f_ in f], axis=0)
 
 
 class _ReverseFunc(tf.keras.Model):
@@ -325,7 +328,7 @@ def _check_inputs(func, y0, t, rtol, atol, method, options, SOLVERS):
         shapes = [y0_.shape for y0_ in y0]
         rtol = _tuple_tol('rtol', rtol, shapes)
         atol = _tuple_tol('atol', atol, shapes)
-        y0 = tf.concat([tf.reshape(y0_, [-1]) for y0_ in y0])
+        y0 = tf.concat([tf.reshape(y0_, [-1]) for y0_ in y0], axis=0)
         func = _TupleFunc(func, shapes)
 
     _assert_floating('y0', y0)

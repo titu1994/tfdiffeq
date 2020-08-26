@@ -1,12 +1,12 @@
-from .dopri5 import Dopri5Solver
-from .dopri8 import Dopri8Solver
-from .fixed_adams import AdamsBashforth, AdamsBashforthMoulton
-from .fixed_grid import Euler, Midpoint, RK4, Heun
-from .adaptive_huen import AdaptiveHeunSolver
-from .bosh3 import Bosh3Solver
-from .misc import _check_inputs, _flat_to_shape
-# from .tsit5 import Tsit5Solver
-# from .adams import VariableCoefficientAdamsBashforth
+from tfdiffeq.dopri5 import Dopri5Solver
+from tfdiffeq.dopri8 import Dopri8Solver
+from tfdiffeq.fixed_adams import AdamsBashforth, AdamsBashforthMoulton
+from tfdiffeq.fixed_grid import Euler, Midpoint, RK4, Heun
+from tfdiffeq.adaptive_huen import AdaptiveHeunSolver
+from tfdiffeq.bosh3 import Bosh3Solver
+from tfdiffeq.misc import _check_inputs, _flat_to_shape
+# from tfdiffeq.tsit5 import Tsit5Solver
+# from tfdiffeq.adams import VariableCoefficientAdamsBashforth
 
 SOLVERS = {
     'explicit_adams': AdamsBashforth,
@@ -72,6 +72,7 @@ def odeint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None):
     solution = solver.integrate(t)
 
     if shapes is not None:
+        print("odeint", solution.shape, shapes, len(t))
         solution = _flat_to_shape(solution, (len(t),), shapes)
 
     return solution
